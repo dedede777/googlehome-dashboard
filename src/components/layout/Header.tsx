@@ -49,10 +49,11 @@ export default function Header() {
 
                     <button
                         onClick={() => setIsDataModalOpen(true)}
-                        className="p-2 text-gray-500 hover:text-[var(--accent)] transition-colors"
+                        className="flex items-center gap-2 px-3 py-2 bg-[#1a1a1a] hover:bg-[#252525] border border-[#333] hover:border-[var(--accent)] rounded transition-all text-xs font-bold text-gray-400 hover:text-[var(--accent)] ml-2"
                         title="データ管理 (バックアップ/復元)"
                     >
-                        <Database size={18} />
+                        <Database size={16} />
+                        <span className="hidden sm:inline">DATA</span>
                     </button>
                 </div>
             </header>
