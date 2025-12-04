@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Settings, X, Plus, Check } from "lucide-react";
 
 interface AIService {
     id: string;
     name: string;
     url: string;
-    svg: JSX.Element;
+    svg: React.ReactNode;
 }
 
 const ALL_AI_SERVICES: AIService[] = [
@@ -143,8 +143,8 @@ export default function AIChatWidget() {
                                 key={service.id}
                                 onClick={() => toggleService(service.id)}
                                 className={`w-full flex items-center gap-2 p-2 border transition-colors ${selectedIds.includes(service.id)
-                                        ? "bg-[#252525] border-green-600/50"
-                                        : "bg-[#151515] border-[#2a2a2a] hover:border-[#3a3a3a]"
+                                    ? "bg-[#252525] border-green-600/50"
+                                    : "bg-[#151515] border-[#2a2a2a] hover:border-[#3a3a3a]"
                                     }`}
                             >
                                 <div className="text-gray-500">{service.svg}</div>
