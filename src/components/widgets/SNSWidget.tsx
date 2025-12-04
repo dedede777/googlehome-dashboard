@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Settings, X, Check } from "lucide-react";
 
 interface SNSService {
     id: string;
     name: string;
     url: string;
-    svg: JSX.Element;
+    svg: React.ReactNode;
 }
 
 const ALL_SNS_SERVICES: SNSService[] = [
