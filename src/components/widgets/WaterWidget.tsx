@@ -37,26 +37,35 @@ interface WaterData {
     history: DrinkHistory[];
 }
 
-// WaterLlama style silhouette path
+// Cuter, fluffy llama path
 const LLAMA_PATH = `
-    M 65 145
-    Q 40 140 35 115
-    Q 30 90 40 70
-    Q 48 55 58 48
-    Q 62 45 62 38
-    L 60 25
-    Q 58 15 65 10
-    Q 72 5 80 5
-    Q 88 5 95 10
-    Q 102 15 100 25
-    L 98 38
-    Q 98 45 102 48
-    Q 112 55 120 70
-    Q 130 90 125 115
-    Q 120 140 95 145
-    Q 80 148 65 145
-    Z
-`;
+        M 50 140
+        // Left body (fluffy)
+        Q 40 140 35 130
+        Q 30 125 32 115
+        Q 28 105 35 95
+        Q 32 85 40 75
+        // Neck left
+        Q 42 65 45 55
+        Q 42 45 45 35
+        // Head left
+        Q 45 25 50 15
+        Q 52 5 60 5
+        // Head top
+        Q 70 2 80 5
+        // Head right
+        Q 88 5 90 15
+        Q 95 25 95 35
+        // Neck right
+        Q 98 45 95 55
+        Q 98 65 100 75
+        // Right body (fluffy)
+        Q 108 85 105 95
+        Q 112 105 108 115
+        Q 110 125 105 130
+        Q 100 140 90 140
+        Z
+    `;
 
 export default function WaterWidget() {
     const [data, setData] = useState<WaterData>({
@@ -186,7 +195,7 @@ export default function WaterWidget() {
     if (!mounted) return null;
 
     return (
-        <div className="h-full flex flex-col bg-gradient-to-b from-[#0a1828] to-[#0a0a0a]">
+        <div className="h-full flex flex-col bg-[#1a1a1a]">
             {/* Header */}
             <div className="widget-title flex-shrink-0">
                 <span className="flex items-center gap-1.5">
@@ -276,121 +285,136 @@ export default function WaterWidget() {
                     </div>
                 </div>
             ) : (
-                <div className="flex-1 flex flex-col min-h-0">
+                <div className="flex-1 flex flex-col min-h-0 relative">
+                    {/* Background decoration */}
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(41,182,246,0.1),transparent_70%)]" />
+
                     {/* Stats */}
-                    <div className="px-3 pt-2 flex-shrink-0">
+                    <div className="px-3 pt-2 flex-shrink-0 z-10">
                         <div className="text-center">
                             <div className={`text-2xl font-bold text-cyan-400 transition-transform ${isAnimating ? "scale-110" : ""}`}>
                                 {data.amount}ml
                             </div>
                             <div className="text-[9px] text-gray-500">目標 {data.goal}ml • {Math.round(percentage)}%</div>
                         </div>
-                        <div className="w-full h-1.5 bg-[#1a1a1a] rounded-full mt-1.5 overflow-hidden">
+                        <div className="w-full h-1.5 bg-[#252525] rounded-full mt-1.5 overflow-hidden">
                             <div className="h-full bg-gradient-to-r from-cyan-600 to-cyan-400 rounded-full transition-all duration-500" style={{ width: `${percentage}%` }} />
                         </div>
                     </div>
 
-                    {/* WaterLlama Silhouette Style */}
-                    <div className="flex-1 flex items-center justify-center overflow-visible">
-                        <svg viewBox="0 0 160 160" className="w-40 h-40" style={{ overflow: "visible" }}>
+                    {/* Cute Llama Design */}
+                    <div className="flex-1 flex items-center justify-center overflow-visible z-10">
+                        <svg viewBox="0 0 140 150" className="w-36 h-36" style={{ overflow: "visible" }}>
                             <style>{`
-                                @keyframes llamaFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
-                                .llama-float { animation: llamaFloat 2.5s ease-in-out infinite; }
+                                @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+                                .animate-float { animation: float 3s ease-in-out infinite; }
                             `}</style>
 
-                            <g className="llama-float">
-                                {/* Leaf cushion */}
-                                <ellipse cx="80" cy="152" rx="50" ry="8" fill="#5D7E2A" />
-                                <ellipse cx="80" cy="150" rx="42" ry="6" fill="#8BC34A" />
-                                <ellipse cx="80" cy="148" rx="32" ry="4" fill="#795548" opacity="0.4" />
+                            <g className="animate-float">
+                                {/* Surfboard / Base */}
+                                <ellipse cx="70" cy="142" rx="45" ry="8" fill="#4CAF50" />
+                                <ellipse cx="70" cy="145" rx="35" ry="5" fill="#2E7D32" opacity="0.5" />
 
-                                {/* Llama silhouette clip */}
+                                {/* Llama Body Clip */}
                                 <defs>
-                                    <clipPath id="llamaSilhouette">
+                                    <clipPath id="cuteLlamaClip">
                                         <path d={LLAMA_PATH} />
                                     </clipPath>
                                 </defs>
 
-                                {/* White base silhouette */}
-                                <path d={LLAMA_PATH} fill="#FAFAFA" />
+                                {/* Base Body Color (White) */}
+                                <path d={LLAMA_PATH} fill="#F5F5F5" />
 
-                                {/* Drink fill layers */}
-                                <g clipPath="url(#llamaSilhouette)">
+                                {/* Liquid Fill */}
+                                <g clipPath="url(#cuteLlamaClip)">
+                                    {/* Background liquid */}
+                                    <rect x="0" y="0" width="140" height="150" fill="#F5F5F5" />
+
+                                    {/* Fill layers */}
                                     {layers.map((layer, i) => (
                                         <rect
                                             key={i}
-                                            x="25"
-                                            y={148 - (layer.startY + layer.height) * 1.4}
-                                            width="120"
-                                            height={layer.height * 1.4 + 1}
+                                            x="0"
+                                            y={140 - (layer.startY + layer.height) * 1.3}
+                                            width="140"
+                                            height={layer.height * 1.3 + 2}
                                             fill={layer.color}
                                         />
                                     ))}
-                                    {/* Wave animation on top */}
+
+                                    {/* Wave effect */}
                                     {layers.length > 0 && (
                                         <path
-                                            d={`M 25 ${148 - percentage * 1.4} 
-                                                Q 50 ${148 - percentage * 1.4 - 5} 80 ${148 - percentage * 1.4}
-                                                Q 110 ${148 - percentage * 1.4 + 5} 140 ${148 - percentage * 1.4}
-                                                L 140 ${148 - percentage * 1.4 + 12}
-                                                L 25 ${148 - percentage * 1.4 + 12} Z`}
+                                            d={`M 0 ${140 - percentage * 1.3} 
+                                                Q 35 ${140 - percentage * 1.3 - 5} 70 ${140 - percentage * 1.3}
+                                                Q 105 ${140 - percentage * 1.3 + 5} 140 ${140 - percentage * 1.3}
+                                                V 150 H 0 Z`}
                                             fill={layers[layers.length - 1]?.color || "#29B6F6"}
-                                            opacity="0.5"
+                                            opacity="0.4"
                                         >
                                             <animate
                                                 attributeName="d"
-                                                dur="2.5s"
+                                                dur="2s"
                                                 repeatCount="indefinite"
                                                 values={`
-                                                    M 25 ${148 - percentage * 1.4} Q 50 ${148 - percentage * 1.4 - 6} 80 ${148 - percentage * 1.4} Q 110 ${148 - percentage * 1.4 + 6} 140 ${148 - percentage * 1.4} L 140 ${148 - percentage * 1.4 + 12} L 25 ${148 - percentage * 1.4 + 12} Z;
-                                                    M 25 ${148 - percentage * 1.4} Q 50 ${148 - percentage * 1.4 + 4} 80 ${148 - percentage * 1.4 - 6} Q 110 ${148 - percentage * 1.4 + 4} 140 ${148 - percentage * 1.4} L 140 ${148 - percentage * 1.4 + 12} L 25 ${148 - percentage * 1.4 + 12} Z;
-                                                    M 25 ${148 - percentage * 1.4} Q 50 ${148 - percentage * 1.4 - 6} 80 ${148 - percentage * 1.4} Q 110 ${148 - percentage * 1.4 + 6} 140 ${148 - percentage * 1.4} L 140 ${148 - percentage * 1.4 + 12} L 25 ${148 - percentage * 1.4 + 12} Z
+                                                    M 0 ${140 - percentage * 1.3} Q 35 ${140 - percentage * 1.3 - 4} 70 ${140 - percentage * 1.3} Q 105 ${140 - percentage * 1.3 + 4} 140 ${140 - percentage * 1.3} V 150 H 0 Z;
+                                                    M 0 ${140 - percentage * 1.3} Q 35 ${140 - percentage * 1.3 + 4} 70 ${140 - percentage * 1.3} Q 105 ${140 - percentage * 1.3 - 4} 140 ${140 - percentage * 1.3} V 150 H 0 Z;
+                                                    M 0 ${140 - percentage * 1.3} Q 35 ${140 - percentage * 1.3 - 4} 70 ${140 - percentage * 1.3} Q 105 ${140 - percentage * 1.3 + 4} 140 ${140 - percentage * 1.3} V 150 H 0 Z
                                                 `}
                                             />
                                         </path>
                                     )}
                                 </g>
 
-                                {/* Ears (part of silhouette) */}
-                                <ellipse cx="68" cy="6" rx="5" ry="12" fill="#FAFAFA" transform="rotate(-15 68 6)" />
-                                <ellipse cx="92" cy="6" rx="5" ry="12" fill="#FAFAFA" transform="rotate(15 92 6)" />
+                                {/* Face Details (Always visible on top) */}
+                                <g transform="translate(0, 0)">
+                                    {/* Ears */}
+                                    <ellipse cx="55" cy="15" rx="4" ry="8" fill="#F5F5F5" transform="rotate(-10 55 15)" />
+                                    <ellipse cx="85" cy="15" rx="4" ry="8" fill="#F5F5F5" transform="rotate(10 85 15)" />
+
+                                    {/* Eyes */}
+                                    <circle cx="60" cy="25" r="2" fill="#333" />
+                                    <circle cx="80" cy="25" r="2" fill="#333" />
+
+                                    {/* Muzzle */}
+                                    <ellipse cx="70" cy="32" rx="6" ry="4" fill="#E0E0E0" opacity="0.5" />
+                                    <path d="M 68 32 Q 70 34 72 32" fill="none" stroke="#333" strokeWidth="1" strokeLinecap="round" />
+                                </g>
 
                                 {/* Feet */}
-                                <ellipse cx="55" cy="146" rx="10" ry="5" fill="#A1887F" />
-                                <ellipse cx="105" cy="146" rx="10" ry="5" fill="#A1887F" />
+                                <path d="M 50 138 L 50 145" stroke="#8D6E63" strokeWidth="4" strokeLinecap="round" />
+                                <path d="M 90 138 L 90 145" stroke="#8D6E63" strokeWidth="4" strokeLinecap="round" />
                             </g>
 
-                            {/* Celebration sparkles */}
+                            {/* Sparkles */}
                             {percentage >= 100 && (
-                                <>
-                                    <text x="20" y="30" fontSize="14">✨</text>
-                                    <text x="125" y="25" fontSize="14">⭐</text>
-                                    <text x="15" y="80" fontSize="12">💫</text>
-                                    <text x="135" y="90" fontSize="12">🎉</text>
-                                </>
+                                <g>
+                                    <text x="20" y="40" fontSize="12" className="animate-pulse">✨</text>
+                                    <text x="110" y="30" fontSize="12" className="animate-pulse" style={{ animationDelay: "0.5s" }}>⭐</text>
+                                </g>
                             )}
                         </svg>
                     </div>
 
                     {/* Drink buttons */}
-                    <div className="px-2 pb-2 flex-shrink-0">
+                    <div className="px-2 pb-2 flex-shrink-0 z-10">
                         <div className="grid grid-cols-7 gap-1">
                             {DRINK_TYPES.map((drink) => (
                                 <button
                                     key={drink.id}
                                     onClick={() => { setSelectedDrink(drink); setFillLevel(50); }}
-                                    className="flex flex-col items-center p-1.5 bg-[#151515] border border-[#252525] hover:border-cyan-500/50 rounded transition-all hover:scale-105"
+                                    className="flex flex-col items-center p-1.5 bg-[#151515] border border-[#252525] hover:border-cyan-500/50 rounded transition-all hover:scale-105 group"
                                     title={`${drink.name} (${drink.maxMl}ml)`}
                                 >
-                                    <span className="text-base">{drink.emoji}</span>
+                                    <span className="text-base group-hover:scale-110 transition-transform">{drink.emoji}</span>
                                 </button>
                             ))}
                             <button
                                 onClick={resetDay}
-                                className="flex flex-col items-center p-1.5 bg-[#151515] border border-[#252525] hover:border-red-500/50 rounded transition-all"
+                                className="flex flex-col items-center p-1.5 bg-[#151515] border border-[#252525] hover:border-red-500/50 rounded transition-all group"
                                 title="リセット"
                             >
-                                <RotateCcw size={16} className="text-gray-500" />
+                                <RotateCcw size={16} className="text-gray-500 group-hover:text-red-400 transition-colors" />
                             </button>
                         </div>
                     </div>
