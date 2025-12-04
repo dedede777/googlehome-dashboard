@@ -37,35 +37,15 @@ interface WaterData {
     history: DrinkHistory[];
 }
 
-// Cuter, fluffy llama path
-const LLAMA_PATH = `
-        M 50 140
-        // Left body (fluffy)
-        Q 40 140 35 130
-        Q 30 125 32 115
-        Q 28 105 35 95
-        Q 32 85 40 75
-        // Neck left
-        Q 42 65 45 55
-        Q 42 45 45 35
-        // Head left
-        Q 45 25 50 15
-        Q 52 5 60 5
-        // Head top
-        Q 70 2 80 5
-        // Head right
-        Q 88 5 90 15
-        Q 95 25 95 35
-        // Neck right
-        Q 98 45 95 55
-        Q 98 65 100 75
-        // Right body (fluffy)
-        Q 108 85 105 95
-        Q 112 105 108 115
-        Q 110 125 105 130
-        Q 100 140 90 140
-        Z
-    `;
+// Dragon Quest Slime style path
+const SLIME_PATH = `
+    M 70 15
+    C 70 15 30 50 20 100
+    C 15 125 25 145 70 145
+    C 115 145 125 125 120 100
+    C 110 50 70 15 70 15
+    Z
+`;
 
 export default function WaterWidget() {
     const [data, setData] = useState<WaterData>({
@@ -317,25 +297,22 @@ export default function WaterWidget() {
 
                                 {/* Llama Body Clip */}
                                 <defs>
-                                    <clipPath id="cuteLlamaClip">
-                                        <path d={LLAMA_PATH} />
+                                    <clipPath id="slimeClip">
+                                        <path d={SLIME_PATH} />
                                     </clipPath>
                                 </defs>
 
-                                {/* Base Body Color (White) */}
-                                <path d={LLAMA_PATH} fill="#F5F5F5" />
+                                {/* Base Body (Transparent/Outline) */}
+                                <path d={SLIME_PATH} fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.2)" strokeWidth="2" />
 
                                 {/* Liquid Fill */}
-                                <g clipPath="url(#cuteLlamaClip)">
-                                    {/* Background liquid */}
-                                    <rect x="0" y="0" width="140" height="150" fill="#F5F5F5" />
-
+                                <g clipPath="url(#slimeClip)">
                                     {/* Fill layers */}
                                     {layers.map((layer, i) => (
                                         <rect
                                             key={i}
                                             x="0"
-                                            y={140 - (layer.startY + layer.height) * 1.3}
+                                            y={145 - (layer.startY + layer.height) * 1.3}
                                             width="140"
                                             height={layer.height * 1.3 + 2}
                                             fill={layer.color}
@@ -345,9 +322,9 @@ export default function WaterWidget() {
                                     {/* Wave effect */}
                                     {layers.length > 0 && (
                                         <path
-                                            d={`M 0 ${140 - percentage * 1.3} 
-                                                Q 35 ${140 - percentage * 1.3 - 5} 70 ${140 - percentage * 1.3}
-                                                Q 105 ${140 - percentage * 1.3 + 5} 140 ${140 - percentage * 1.3}
+                                            d={`M 0 ${145 - percentage * 1.3} 
+                                                Q 35 ${145 - percentage * 1.3 - 5} 70 ${145 - percentage * 1.3}
+                                                Q 105 ${145 - percentage * 1.3 + 5} 140 ${145 - percentage * 1.3}
                                                 V 150 H 0 Z`}
                                             fill={layers[layers.length - 1]?.color || "#29B6F6"}
                                             opacity="0.4"
@@ -357,33 +334,27 @@ export default function WaterWidget() {
                                                 dur="2s"
                                                 repeatCount="indefinite"
                                                 values={`
-                                                    M 0 ${140 - percentage * 1.3} Q 35 ${140 - percentage * 1.3 - 4} 70 ${140 - percentage * 1.3} Q 105 ${140 - percentage * 1.3 + 4} 140 ${140 - percentage * 1.3} V 150 H 0 Z;
-                                                    M 0 ${140 - percentage * 1.3} Q 35 ${140 - percentage * 1.3 + 4} 70 ${140 - percentage * 1.3} Q 105 ${140 - percentage * 1.3 - 4} 140 ${140 - percentage * 1.3} V 150 H 0 Z;
-                                                    M 0 ${140 - percentage * 1.3} Q 35 ${140 - percentage * 1.3 - 4} 70 ${140 - percentage * 1.3} Q 105 ${140 - percentage * 1.3 + 4} 140 ${140 - percentage * 1.3} V 150 H 0 Z
+                                                    M 0 ${145 - percentage * 1.3} Q 35 ${145 - percentage * 1.3 - 4} 70 ${145 - percentage * 1.3} Q 105 ${145 - percentage * 1.3 + 4} 140 ${145 - percentage * 1.3} V 150 H 0 Z;
+                                                    M 0 ${145 - percentage * 1.3} Q 35 ${145 - percentage * 1.3 + 4} 70 ${145 - percentage * 1.3} Q 105 ${145 - percentage * 1.3 - 4} 140 ${145 - percentage * 1.3} V 150 H 0 Z;
+                                                    M 0 ${145 - percentage * 1.3} Q 35 ${145 - percentage * 1.3 - 4} 70 ${145 - percentage * 1.3} Q 105 ${145 - percentage * 1.3 + 4} 140 ${145 - percentage * 1.3} V 150 H 0 Z
                                                 `}
                                             />
                                         </path>
                                     )}
                                 </g>
 
-                                {/* Face Details (Always visible on top) */}
+                                {/* Slime Face (Always visible) */}
                                 <g transform="translate(0, 0)">
-                                    {/* Ears */}
-                                    <ellipse cx="55" cy="15" rx="4" ry="8" fill="#F5F5F5" transform="rotate(-10 55 15)" />
-                                    <ellipse cx="85" cy="15" rx="4" ry="8" fill="#F5F5F5" transform="rotate(10 85 15)" />
-
                                     {/* Eyes */}
-                                    <circle cx="60" cy="25" r="2" fill="#333" />
-                                    <circle cx="80" cy="25" r="2" fill="#333" />
+                                    <circle cx="55" cy="75" r="8" fill="white" />
+                                    <circle cx="55" cy="75" r="2" fill="black" />
 
-                                    {/* Muzzle */}
-                                    <ellipse cx="70" cy="32" rx="6" ry="4" fill="#E0E0E0" opacity="0.5" />
-                                    <path d="M 68 32 Q 70 34 72 32" fill="none" stroke="#333" strokeWidth="1" strokeLinecap="round" />
+                                    <circle cx="85" cy="75" r="8" fill="white" />
+                                    <circle cx="85" cy="75" r="2" fill="black" />
+
+                                    {/* Mouth */}
+                                    <path d="M 55 95 Q 70 105 85 95" fill="none" stroke="#E0E0E0" strokeWidth="2" strokeLinecap="round" />
                                 </g>
-
-                                {/* Feet */}
-                                <path d="M 50 138 L 50 145" stroke="#8D6E63" strokeWidth="4" strokeLinecap="round" />
-                                <path d="M 90 138 L 90 145" stroke="#8D6E63" strokeWidth="4" strokeLinecap="round" />
                             </g>
 
                             {/* Sparkles */}
