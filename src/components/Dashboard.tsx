@@ -28,6 +28,8 @@ import WaterWidget from "./widgets/WaterWidget";
 import PlantWidget from "./widgets/PlantWidget";
 import ExpenseWidget from "./widgets/ExpenseWidget";
 import GoogleAppsLauncher from "./GoogleAppsLauncher";
+import DataManagementModal from "./DataManagementModal";
+import { Database } from "lucide-react";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -110,6 +112,7 @@ export default function Dashboard() {
     const [dragStartLayout, setDragStartLayout] = useState<Layout[] | null>(null);
     const [showPanel, setShowPanel] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const [isDataModalOpen, setIsDataModalOpen] = useState(false);
     const [coverImage, setCoverImage] = useState(DEFAULT_COVER);
     const [title, setTitle] = useState("Command Center");
     const [subtitle, setSubtitle] = useState("Your personal dashboard");
@@ -322,6 +325,14 @@ export default function Dashboard() {
                 <ThemeSwitcher />
                 <GoogleAppsLauncher />
                 <button
+                    onClick={() => setIsDataModalOpen(true)}
+                    className="flex items-center gap-2 px-3 py-3 bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[var(--accent)] transition-colors text-xs font-bold text-gray-400 hover:text-[var(--accent)]"
+                    title="Data Management"
+                >
+                    <Database size={16} />
+                    <span className="hidden sm:inline">DATA</span>
+                </button>
+                <button
                     onClick={() => setShowPanel(!showPanel)}
                     className="p-3 bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#3a3a3a] transition-colors"
                     title="Add Widget"
@@ -399,6 +410,12 @@ export default function Dashboard() {
                     );
                 })}
             </ResponsiveGridLayout>
+            {/* Data Management Modal */}
+            <DataManagementModal
+                isOpen={isDataModalOpen}
+                onClose={() => setIsDataModalOpen(false)}
+            />
+
         </div>
     );
 }
