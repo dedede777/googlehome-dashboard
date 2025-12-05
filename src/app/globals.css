@@ -54,6 +54,7 @@ body {
 
 .react-grid-item>.react-resizable-handle {
   background: none !important;
+  z-index: 50 !important;
 }
 
 .react-grid-item>.react-resizable-handle::after {
@@ -87,4 +88,80 @@ body {
 input:focus,
 textarea:focus {
   outline: none;
+}
+
+/* Widget Wrapper - Contains the floating card */
+.widget-wrapper {
+  width: 100%;
+  height: 100%;
+}
+
+/* Widget Card - Premium 3D Hover */
+.widget-card {
+  position: relative;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  border-radius: 4px;
+}
+
+.widget-card:hover {
+  transform: translateY(-6px);
+  box-shadow:
+    0 15px 35px rgba(0, 0, 0, 0.4),
+    0 0 30px rgba(34, 211, 238, 0.15),
+    0 0 60px rgba(139, 92, 246, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-color: rgba(34, 211, 238, 0.3) !important;
+}
+
+.widget-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: linear-gradient(135deg,
+      rgba(34, 211, 238, 0.08) 0%,
+      transparent 50%,
+      rgba(139, 92, 246, 0.08) 100%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.widget-card:hover::before {
+  opacity: 1;
+}
+
+/* Glow reflection effect under the card */
+.widget-card::after {
+  content: '';
+  position: absolute;
+  bottom: -15px;
+  left: 15%;
+  right: 15%;
+  height: 15px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center,
+      rgba(34, 211, 238, 0.3) 0%,
+      transparent 70%);
+  opacity: 0;
+  transition: all 0.4s ease;
+  pointer-events: none;
+  filter: blur(10px);
+}
+
+.widget-card:hover::after {
+  opacity: 1;
+  bottom: -20px;
+}
+
+/* React Grid Item base */
+.react-grid-item {
+  border-radius: 4px;
+  overflow: visible !important;
+}
+
+.react-grid-item:active .widget-card {
+  transform: scale(0.98);
+  transition: all 0.1s ease;
 }

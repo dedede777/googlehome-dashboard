@@ -37,13 +37,13 @@ interface WaterData {
     history: DrinkHistory[];
 }
 
-// Dragon Quest Slime style path
+// Dragon Quest Slime style path - Even wider, more bottom-heavy
 const SLIME_PATH = `
-    M 70 15
-    C 70 15 30 50 20 100
-    C 15 125 25 145 70 145
-    C 115 145 125 125 120 100
-    C 110 50 70 15 70 15
+    M 70 5
+    C 70 5 10 60 5 110
+    C 2 145 30 155 70 155
+    C 110 155 138 145 135 110
+    C 130 60 70 5 70 5
     Z
 `;
 
@@ -269,6 +269,15 @@ export default function WaterWidget() {
                     {/* Background decoration */}
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(41,182,246,0.1),transparent_70%)]" />
 
+                    {/* Victory Message */}
+                    {percentage >= 100 && (
+                        <div className="absolute top-24 left-0 right-0 z-20 flex justify-center pointer-events-none">
+                            <div className="bg-black/80 border border-white/50 rounded px-3 py-1 text-white font-[family-name:var(--font-dotgothic)] text-sm animate-bounce shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                                スライムを やっつけた。
+                            </div>
+                        </div>
+                    )}
+
                     {/* Stats */}
                     <div className="px-3 pt-2 flex-shrink-0 z-10">
                         <div className="text-center">
@@ -283,18 +292,45 @@ export default function WaterWidget() {
                     </div>
 
                     {/* Cute Llama Design */}
-                    <div className="flex-1 flex items-center justify-center overflow-visible z-10">
+                    <div className="flex-1 flex items-center justify-center overflow-visible z-10 relative">
                         <svg viewBox="0 0 140 150" className="w-36 h-36" style={{ overflow: "visible" }}>
                             <style>{`
                                 @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
                                 .animate-float { animation: float 3s ease-in-out infinite; }
                             `}</style>
 
-                            <g className="animate-float">
-                                {/* Surfboard / Base */}
-                                <ellipse cx="70" cy="142" rx="45" ry="8" fill="#4CAF50" />
-                                <ellipse cx="70" cy="145" rx="35" ry="5" fill="#2E7D32" opacity="0.5" />
+                            {/* Grassland Base - Rounded Gentle Hill */}
+                            <path
+                                d="M -80 220 Q 70 110 220 220 Z"
+                                fill="#66BB6A"
+                                stroke="#4CAF50"
+                                strokeWidth="2"
+                            />
+                            <path
+                                d="M -80 230 Q 70 120 220 230 Z"
+                                fill="#43A047"
+                                opacity="0.6"
+                            />
 
+                            {/* Flowers - Adjusted positions for hill curve */}
+                            <g transform="translate(10, 165)">
+                                <circle r="3" fill="white" />
+                                <circle r="1.5" fill="#FFEB3B" />
+                            </g>
+                            <g transform="translate(120, 162)">
+                                <circle r="3" fill="white" />
+                                <circle r="1.5" fill="#FFEB3B" />
+                            </g>
+                            <g transform="translate(40, 160)">
+                                <circle r="2" fill="white" />
+                                <circle r="1" fill="#FFEB3B" />
+                            </g>
+                            <g transform="translate(90, 158)">
+                                <circle r="2" fill="white" />
+                                <circle r="1" fill="#FFEB3B" />
+                            </g>
+
+                            <g className="animate-float" transform="translate(0, -20)">
                                 {/* Llama Body Clip */}
                                 <defs>
                                     <clipPath id="slimeClip">
@@ -303,57 +339,87 @@ export default function WaterWidget() {
                                 </defs>
 
                                 {/* Base Body (Transparent/Outline) */}
-                                <path d={SLIME_PATH} fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.2)" strokeWidth="2" />
+                                <path d={SLIME_PATH} fill="rgba(41, 182, 246, 0.1)" stroke="rgba(41, 182, 246, 0.3)" strokeWidth="2" />
 
-                                {/* Liquid Fill */}
+                                {/* Liquid Fill - Dynamic Colors */}
                                 <g clipPath="url(#slimeClip)">
                                     {/* Fill layers */}
                                     {layers.map((layer, i) => (
                                         <rect
                                             key={i}
                                             x="0"
-                                            y={145 - (layer.startY + layer.height) * 1.3}
+                                            y={155 - (layer.startY + layer.height) * 1.5}
                                             width="140"
-                                            height={layer.height * 1.3 + 2}
+                                            height={layer.height * 1.5 + 2} // +2 overlap to prevent gaps
                                             fill={layer.color}
+                                            opacity="0.9"
                                         />
                                     ))}
 
-                                    {/* Wave effect */}
+                                    {/* Wave effect - Matches top layer color */}
                                     {layers.length > 0 && (
-                                        <path
-                                            d={`M 0 ${145 - percentage * 1.3} 
-                                                Q 35 ${145 - percentage * 1.3 - 5} 70 ${145 - percentage * 1.3}
-                                                Q 105 ${145 - percentage * 1.3 + 5} 140 ${145 - percentage * 1.3}
-                                                V 150 H 0 Z`}
-                                            fill={layers[layers.length - 1]?.color || "#29B6F6"}
-                                            opacity="0.4"
-                                        >
-                                            <animate
-                                                attributeName="d"
-                                                dur="2s"
-                                                repeatCount="indefinite"
-                                                values={`
-                                                    M 0 ${145 - percentage * 1.3} Q 35 ${145 - percentage * 1.3 - 4} 70 ${145 - percentage * 1.3} Q 105 ${145 - percentage * 1.3 + 4} 140 ${145 - percentage * 1.3} V 150 H 0 Z;
-                                                    M 0 ${145 - percentage * 1.3} Q 35 ${145 - percentage * 1.3 + 4} 70 ${145 - percentage * 1.3} Q 105 ${145 - percentage * 1.3 - 4} 140 ${145 - percentage * 1.3} V 150 H 0 Z;
-                                                    M 0 ${145 - percentage * 1.3} Q 35 ${145 - percentage * 1.3 - 4} 70 ${145 - percentage * 1.3} Q 105 ${145 - percentage * 1.3 + 4} 140 ${145 - percentage * 1.3} V 150 H 0 Z
-                                                `}
-                                            />
-                                        </path>
+                                        <>
+                                            <path
+                                                d={`M 0 ${155 - percentage * 1.5} 
+                                                    Q 35 ${155 - percentage * 1.5 - 10} 70 ${155 - percentage * 1.5}
+                                                    Q 105 ${155 - percentage * 1.5 + 10} 140 ${155 - percentage * 1.5}
+                                                    V ${155 - percentage * 1.5 + 20} H 0 Z`}
+                                                fill={layers[layers.length - 1]?.color}
+                                                opacity="0.4"
+                                            >
+                                                <animate
+                                                    attributeName="d"
+                                                    dur="3s"
+                                                    repeatCount="indefinite"
+                                                    values={`
+                                                        M 0 ${155 - percentage * 1.5} Q 35 ${155 - percentage * 1.5 - 10} 70 ${155 - percentage * 1.5} Q 105 ${155 - percentage * 1.5 + 10} 140 ${155 - percentage * 1.5} V ${155 - percentage * 1.5 + 20} H 0 Z;
+                                                        M 0 ${155 - percentage * 1.5} Q 35 ${155 - percentage * 1.5 + 10} 70 ${155 - percentage * 1.5} Q 105 ${155 - percentage * 1.5 - 10} 140 ${155 - percentage * 1.5} V ${155 - percentage * 1.5 + 20} H 0 Z;
+                                                        M 0 ${155 - percentage * 1.5} Q 35 ${155 - percentage * 1.5 - 10} 70 ${155 - percentage * 1.5} Q 105 ${155 - percentage * 1.5 + 10} 140 ${155 - percentage * 1.5} V ${155 - percentage * 1.5 + 20} H 0 Z
+                                                    `}
+                                                />
+                                            </path>
+                                            <path
+                                                d={`M 0 ${155 - percentage * 1.5} 
+                                                    Q 35 ${155 - percentage * 1.5 + 15} 70 ${155 - percentage * 1.5}
+                                                    Q 105 ${155 - percentage * 1.5 - 15} 140 ${155 - percentage * 1.5}
+                                                    V ${155 - percentage * 1.5 + 20} H 0 Z`}
+                                                fill={layers[layers.length - 1]?.color}
+                                                opacity="0.6"
+                                            >
+                                                <animate
+                                                    attributeName="d"
+                                                    dur="1.5s"
+                                                    repeatCount="indefinite"
+                                                    values={`
+                                                        M 0 ${155 - percentage * 1.5} Q 35 ${155 - percentage * 1.5 + 15} 70 ${155 - percentage * 1.5} Q 105 ${155 - percentage * 1.5 - 15} 140 ${155 - percentage * 1.5} V ${155 - percentage * 1.5 + 20} H 0 Z;
+                                                        M 0 ${155 - percentage * 1.5} Q 35 ${155 - percentage * 1.5 - 15} 70 ${155 - percentage * 1.5} Q 105 ${155 - percentage * 1.5 + 15} 140 ${155 - percentage * 1.5} V ${155 - percentage * 1.5 + 20} H 0 Z;
+                                                        M 0 ${155 - percentage * 1.5} Q 35 ${155 - percentage * 1.5 + 15} 70 ${155 - percentage * 1.5} Q 105 ${155 - percentage * 1.5 - 15} 140 ${155 - percentage * 1.5} V ${155 - percentage * 1.5 + 20} H 0 Z
+                                                    `}
+                                                />
+                                            </path>
+                                        </>
                                     )}
                                 </g>
 
+                                {/* Soft Highlight for Texture */}
+                                <ellipse cx="45" cy="60" rx="15" ry="8" transform="rotate(-45 45 60)" fill="white" opacity="0.2" filter="blur(2px)" />
+
                                 {/* Slime Face (Always visible) */}
-                                <g transform="translate(0, 0)">
-                                    {/* Eyes */}
-                                    <circle cx="55" cy="75" r="8" fill="white" />
-                                    <circle cx="55" cy="75" r="2" fill="black" />
+                                <g transform="translate(0, 10)">
+                                    {/* Eyes - Larger and closer */}
+                                    <circle cx="52" cy="75" r="14" fill="white" />
+                                    <circle cx="52" cy="75" r="3" fill="black" />
 
-                                    <circle cx="85" cy="75" r="8" fill="white" />
-                                    <circle cx="85" cy="75" r="2" fill="black" />
+                                    <circle cx="88" cy="75" r="14" fill="white" />
+                                    <circle cx="88" cy="75" r="3" fill="black" />
 
-                                    {/* Mouth */}
-                                    <path d="M 55 95 Q 70 105 85 95" fill="none" stroke="#E0E0E0" strokeWidth="2" strokeLinecap="round" />
+                                    {/* Mouth - Wide smile with color */}
+                                    <path
+                                        d="M 45 95 Q 70 120 95 95 Q 70 110 45 95 Z"
+                                        fill="#FF8A65"
+                                        stroke="#333"
+                                        strokeWidth="1"
+                                    />
                                 </g>
                             </g>
 

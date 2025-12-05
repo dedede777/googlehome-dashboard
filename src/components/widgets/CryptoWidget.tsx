@@ -184,10 +184,16 @@ export default function CryptoWidget() {
                         <p className="text-[10px] text-[#666]">コイン未選択</p>
                     ) : (
                         data.map((coin) => (
-                            <div key={coin.id} className="flex items-center justify-between text-[10px]">
-                                <span className="text-[#888] font-semibold">{coin.symbol}</span>
+                            <a
+                                key={coin.id}
+                                href={`https://coinmarketcap.com/currencies/${coin.id}/`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-between text-[10px] hover:bg-[#1a1a1a] p-1 -mx-1 px-1 rounded transition-colors group"
+                            >
+                                <span className="text-[#888] font-semibold group-hover:text-cyan-400 transition-colors">{coin.symbol}</span>
                                 <div className="flex items-center gap-1">
-                                    <span className="text-[#666]">{formatPrice(coin.price)}</span>
+                                    <span className="text-[#666] group-hover:text-gray-400">{formatPrice(coin.price)}</span>
                                     <span className={`text-[9px] ${coin.change >= 0 ? "text-green-500" : "text-red-500"}`}>
                                         {coin.change >= 0 ? "+" : ""}{coin.change.toFixed(1)}%
                                     </span>
@@ -197,7 +203,7 @@ export default function CryptoWidget() {
                                         <TrendingDown size={10} className="text-red-500" />
                                     )}
                                 </div>
-                            </div>
+                            </a>
                         ))
                     )}
                 </div>

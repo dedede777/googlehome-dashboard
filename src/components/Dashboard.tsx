@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { Responsive, WidthProvider, Layout } from "react-grid-layout";
-import { Plus, X, Search, GripVertical, Image as ImageIcon } from "lucide-react";
+import { Plus, X, Search, GripVertical, Image as ImageIcon, Lock, Unlock } from "lucide-react";
 import ThemeSwitcher from "./ThemeSwitcher";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -27,8 +27,10 @@ import RSSWidget from "./widgets/RSSWidget";
 import WaterWidget from "./widgets/WaterWidget";
 import PlantWidget from "./widgets/PlantWidget";
 import ExpenseWidget from "./widgets/ExpenseWidget";
+import ZenWidget from "./widgets/ZenWidget";
 import GoogleAppsLauncher from "./GoogleAppsLauncher";
 import DataManagementModal from "./DataManagementModal";
+import CursorEffects from "./CursorEffects";
 import { Database } from "lucide-react";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
@@ -53,6 +55,7 @@ const WIDGET_COMPONENTS: Record<string, React.ComponentType<Record<string, unkno
     water: WaterWidget,
     plant: PlantWidget,
     expense: ExpenseWidget,
+    zen: ZenWidget,
 };
 
 const WIDGET_CATALOG = [
@@ -64,6 +67,7 @@ const WIDGET_CATALOG = [
     { id: "water", name: "Water", icon: "🧋", category: "Lifestyle" },
     { id: "plant", name: "Plant", icon: "🌱", category: "Lifestyle" },
     { id: "expense", name: "Expense", icon: "💰", category: "Lifestyle" },
+    { id: "zen", name: "Zen", icon: "🧘", category: "Lifestyle" },
     { id: "tasks", name: "Tasks", icon: "✅", category: "Productivity" },
     { id: "pomodoro", name: "Pomodoro", icon: "🍅", category: "Productivity" },
     { id: "memo", name: "Memo", icon: "📝", category: "Productivity" },
@@ -113,6 +117,7 @@ export default function Dashboard() {
     const [showPanel, setShowPanel] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [isDataModalOpen, setIsDataModalOpen] = useState(false);
+    const [isLocked, setIsLocked] = useState(false);
     const [coverImage, setCoverImage] = useState(DEFAULT_COVER);
     const [title, setTitle] = useState("Command Center");
     const [subtitle, setSubtitle] = useState("Your personal dashboard");
@@ -333,6 +338,16 @@ export default function Dashboard() {
                     <span className="hidden sm:inline">DATA</span>
                 </button>
                 <button
+                    onClick={() => setIsLocked(!isLocked)}
+                    className={`p-3 bg-[#1a1a1a] border transition-colors ${isLocked
+                        ? "border-cyan-500/50 text-cyan-400"
+                        : "border-[#2a2a2a] hover:border-[#3a3a3a] text-gray-400"
+                        }`}
+                    title={isLocked ? "Unlock Layout" : "Lock Layout"}
+                >
+                    {isLocked ? <Lock size={18} /> : <Unlock size={18} />}
+                </button>
+                <button
                     onClick={() => setShowPanel(!showPanel)}
                     className="p-3 bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#3a3a3a] transition-colors"
                     title="Add Widget"
@@ -383,7 +398,8 @@ export default function Dashboard() {
                 onDrag={handleDrag}
                 onDragStop={handleDragStop}
                 draggableHandle=".widget-title"
-                isResizable={true}
+                isDraggable={!isLocked}
+                isResizable={!isLocked}
                 compactType={null}
                 preventCollision={false}
                 margin={[16, 16]}
@@ -391,21 +407,23 @@ export default function Dashboard() {
                 {widgets.map((widget) => {
                     const WidgetComponent = WIDGET_COMPONENTS[widget.type];
                     return (
-                        <div key={widget.id} className="bg-[#1a1a1a] border border-[#2a2a2a] overflow-hidden group">
-                            <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
-                                    onClick={() => removeWidget(widget.id)}
-                                    className="p-1.5 bg-[#0a0a0a] border border-[#2a2a2a] hover:border-red-500/50"
-                                >
-                                    <X size={12} className="text-gray-500 hover:text-red-400" />
-                                </button>
+                        <div key={widget.id} className="widget-wrapper">
+                            <div className="widget-card bg-[#1a1a1a] border border-[#2a2a2a] overflow-hidden group h-full">
+                                <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                        onClick={() => removeWidget(widget.id)}
+                                        className="p-1.5 bg-[#0a0a0a] border border-[#2a2a2a] hover:border-red-500/50"
+                                    >
+                                        <X size={12} className="text-gray-500 hover:text-red-400" />
+                                    </button>
+                                </div>
+                                {WidgetComponent && (
+                                    <WidgetComponent
+                                        {...widget.data}
+                                        onUpdate={(key: string, value: string) => updateWidgetData(widget.id, { [key]: value })}
+                                    />
+                                )}
                             </div>
-                            {WidgetComponent && (
-                                <WidgetComponent
-                                    {...widget.data}
-                                    onUpdate={(key: string, value: string) => updateWidgetData(widget.id, { [key]: value })}
-                                />
-                            )}
                         </div>
                     );
                 })}
@@ -415,7 +433,8 @@ export default function Dashboard() {
                 isOpen={isDataModalOpen}
                 onClose={() => setIsDataModalOpen(false)}
             />
-
+            {/* Cursor Effects */}
+            <CursorEffects />
         </div>
     );
 }
