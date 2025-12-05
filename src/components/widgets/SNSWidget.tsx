@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Settings, X, Check } from "lucide-react";
+import { Settings, X, Check, Plus, Trash2 } from "lucide-react";
 
 interface SNSService {
     id: string;
@@ -141,22 +141,39 @@ const ALL_SNS_SERVICES: SNSService[] = [
             </svg>
         ),
     },
+    {
+        id: "note",
+        name: "note",
+        url: "https://note.com",
+        svg: (
+            <svg viewBox="0 0 24 24" className="w-5 h-5">
+                <text x="4" y="20" fontSize="22" fontWeight="bold" fill="currentColor" fontFamily="Arial, sans-serif">n</text>
+            </svg>
+        ),
+    },
 ];
 
 const STORAGE_KEY = "dashboard-sns-services";
+const CUSTOM_STORAGE_KEY = "dashboard-sns-custom";
 const DEFAULT_SELECTED = ["x", "instagram", "youtube", "discord", "threads"];
+
+interface CustomSNS { id: string; name: string; url: string; }
 
 export default function SNSWidget() {
     const [selectedIds, setSelectedIds] = useState<string[]>(DEFAULT_SELECTED);
+    const [customServices, setCustomServices] = useState<CustomSNS[]>([]);
     const [showSettings, setShowSettings] = useState(false);
+    const [showAddForm, setShowAddForm] = useState(false);
+    const [newName, setNewName] = useState("");
+    const [newUrl, setNewUrl] = useState("");
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         setMounted(true);
         const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            setSelectedIds(JSON.parse(saved));
-        }
+        if (saved) setSelectedIds(JSON.parse(saved));
+        const customSaved = localStorage.getItem(CUSTOM_STORAGE_KEY);
+        if (customSaved) setCustomServices(JSON.parse(customSaved));
     }, []);
 
     const saveSelection = (ids: string[]) => {
@@ -172,13 +189,39 @@ export default function SNSWidget() {
         }
     };
 
-    const openSNS = (url: string) => {
-        window.open(url, "_blank");
+    const saveCustomServices = (services: CustomSNS[]) => {
+        setCustomServices(services);
+        localStorage.setItem(CUSTOM_STORAGE_KEY, JSON.stringify(services));
+    };
+
+    const addCustomService = () => {
+        if (!newName.trim() || !newUrl.trim()) return;
+        const url = newUrl.startsWith("http") ? newUrl : `https://${newUrl}`;
+        const newService: CustomSNS = { id: `custom-${Date.now()}`, name: newName.trim(), url };
+        saveCustomServices([...customServices, newService]);
+        saveSelection([...selectedIds, newService.id]);
+        setNewName(""); setNewUrl(""); setShowAddForm(false);
+    };
+
+    const deleteCustomService = (id: string) => {
+        saveCustomServices(customServices.filter(s => s.id !== id));
+        saveSelection(selectedIds.filter(s => s !== id));
+    };
+
+    const openSNS = (url: string) => window.open(url, "_blank");
+
+    const getFaviconUrl = (url: string) => {
+        try { return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=64`; }
+        catch { return ""; }
     };
 
     if (!mounted) return null;
 
-    const selectedServices = ALL_SNS_SERVICES.filter(s => selectedIds.includes(s.id));
+    const allServices: Array<{ id: string; name: string; url: string; svg: React.ReactNode; isCustom?: boolean }> = [
+        ...ALL_SNS_SERVICES.map(s => ({ ...s, isCustom: false })),
+        ...customServices.map(c => ({ ...c, svg: null as React.ReactNode, isCustom: true })),
+    ];
+    const selectedServices = allServices.filter(s => selectedIds.includes(s.id));
 
     return (
         <div className="h-full flex flex-col overflow-hidden">
@@ -188,42 +231,55 @@ export default function SNSWidget() {
                 <div className="flex-1 p-2 overflow-auto min-h-0">
                     <p className="text-[9px] text-gray-500 mb-2">表示するSNSを選択:</p>
                     <div className="space-y-1">
-                        {ALL_SNS_SERVICES.map((service) => (
-                            <button
-                                key={service.id}
-                                onClick={() => toggleService(service.id)}
-                                className={`w-full flex items-center gap-2 p-2 border transition-colors ${selectedIds.includes(service.id)
-                                    ? "bg-[#252525] border-green-600/50"
-                                    : "bg-[#151515] border-[#2a2a2a] hover:border-[#3a3a3a]"
-                                    }`}
-                            >
-                                <div className="text-gray-500">{service.svg}</div>
-                                <span className="text-[10px] text-gray-300 flex-1 text-left">
-                                    {service.name}
-                                </span>
-                                {selectedIds.includes(service.id) && (
-                                    <Check size={12} className="text-green-500" />
+                        {allServices.map((service) => (
+                            <div key={service.id} className="flex items-center gap-1">
+                                <button
+                                    onClick={() => toggleService(service.id)}
+                                    className={`flex-1 flex items-center gap-2 p-2 border transition-colors ${selectedIds.includes(service.id)
+                                        ? "bg-[#252525] border-green-600/50"
+                                        : "bg-[#151515] border-[#2a2a2a] hover:border-[#3a3a3a]"
+                                        }`}
+                                >
+                                    {service.svg ? (
+                                        <div className="text-gray-500">{service.svg as React.ReactNode}</div>
+                                    ) : (
+                                        <img src={getFaviconUrl(service.url)} alt={service.name} className="w-5 h-5 rounded-sm" />
+                                    )}
+                                    <span className="text-[10px] text-gray-300 flex-1 text-left">{service.name}</span>
+                                    {selectedIds.includes(service.id) && <Check size={12} className="text-green-500" />}
+                                </button>
+                                {'isCustom' in service && service.isCustom && (
+                                    <button onClick={() => deleteCustomService(service.id)} className="p-2 text-gray-600 hover:text-red-400">
+                                        <Trash2 size={12} />
+                                    </button>
                                 )}
-                            </button>
+                            </div>
                         ))}
                     </div>
+                    {showAddForm ? (
+                        <div className="mt-3 p-2 bg-[#151515] border border-[#2a2a2a] space-y-2">
+                            <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="名前 (例: MySNS)" className="w-full bg-[#0a0a0a] border border-[#3a3a3a] text-[10px] text-gray-300 p-1.5 outline-none focus:border-[#555]" autoFocus />
+                            <input type="text" value={newUrl} onChange={(e) => setNewUrl(e.target.value)} placeholder="URL (例: https://example.com)" className="w-full bg-[#0a0a0a] border border-[#3a3a3a] text-[10px] text-gray-300 p-1.5 outline-none focus:border-[#555]" onKeyDown={(e) => e.key === "Enter" && addCustomService()} />
+                            <div className="flex gap-1">
+                                <button onClick={addCustomService} className="flex-1 py-1 text-[10px] text-gray-300 bg-[#252525] border border-[#3a3a3a] hover:bg-[#2a2a2a]">追加</button>
+                                <button onClick={() => { setShowAddForm(false); setNewName(""); setNewUrl(""); }} className="px-2 py-1 text-[10px] text-gray-500 bg-[#252525] border border-[#3a3a3a] hover:bg-[#2a2a2a]">キャンセル</button>
+                            </div>
+                        </div>
+                    ) : (
+                        <button onClick={() => setShowAddForm(true)} className="mt-3 w-full flex items-center justify-center gap-1 py-1.5 text-[10px] text-gray-500 hover:text-gray-300 bg-[#151515] border border-dashed border-[#3a3a3a] hover:border-[#555] transition-colors">
+                            <Plus size={12} /><span>カスタムSNS追加</span>
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className="flex-1 p-2 overflow-auto min-h-0">
                     <div className="grid grid-cols-3 gap-1.5 auto-rows-min">
                         {selectedServices.map((service) => (
-                            <button
-                                key={service.id}
-                                onClick={() => openSNS(service.url)}
-                                className="group flex flex-col items-center gap-1 p-2 bg-[#151515] border border-[#252525] hover:border-[#3a3a3a] hover:bg-[#1a1a1a] transition-all"
-                                title={service.name}
-                            >
+                            <button key={service.id} onClick={() => openSNS(service.url)} className="group flex flex-col items-center gap-1 p-2 bg-[#151515] border border-[#252525] hover:border-[#3a3a3a] hover:bg-[#1a1a1a] transition-all" title={service.name}>
                                 <div className="text-gray-500 group-hover:text-gray-300 transition-colors">
-                                    {service.svg}
+                                    {service.svg ? service.svg : <img src={getFaviconUrl(service.url)} alt={service.name} className="w-5 h-5" />}
                                 </div>
-                                <span className="text-[8px] text-gray-600 group-hover:text-gray-400 transition-colors truncate w-full text-center">
-                                    {service.name}
-                                </span>
+                                <span className="text-[8px] text-gray-600 group-hover:text-gray-400 transition-colors truncate w-full text-center">{service.name}</span>
                             </button>
                         ))}
                     </div>
@@ -231,10 +287,7 @@ export default function SNSWidget() {
             )}
 
             <div className="p-1.5 border-t border-[#2a2a2a] flex-shrink-0">
-                <button
-                    onClick={() => setShowSettings(!showSettings)}
-                    className="w-full flex items-center justify-center gap-1 py-1 text-[9px] text-gray-500 hover:text-gray-300 bg-[#1a1a1a] hover:bg-[#252525] border border-[#2a2a2a] transition-colors"
-                >
+                <button onClick={() => { setShowSettings(!showSettings); setShowAddForm(false); }} className="w-full flex items-center justify-center gap-1 py-1 text-[9px] text-gray-500 hover:text-gray-300 bg-[#1a1a1a] hover:bg-[#252525] border border-[#2a2a2a] transition-colors">
                     {showSettings ? <X size={10} /> : <Settings size={10} />}
                     <span>{showSettings ? "完了" : "設定"}</span>
                 </button>

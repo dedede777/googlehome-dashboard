@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { RotateCcw, X, Check } from "lucide-react";
+import { RotateCcw, X, Check, Undo2 } from "lucide-react";
 
 interface DrinkType {
     id: string;
@@ -37,16 +37,6 @@ interface WaterData {
     history: DrinkHistory[];
 }
 
-// Dragon Quest Slime style path - Even wider, more bottom-heavy
-const SLIME_PATH = `
-    M 70 5
-    C 70 5 10 60 5 110
-    C 2 145 30 155 70 155
-    C 110 155 138 145 135 110
-    C 130 60 70 5 70 5
-    Z
-`;
-
 export default function WaterWidget() {
     const [data, setData] = useState<WaterData>({
         date: new Date().toDateString(),
@@ -79,12 +69,10 @@ export default function WaterWidget() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
     };
 
-    // Calculate fill level from mouse position
     const calculateFillFromEvent = (clientY: number) => {
         if (!containerRef.current) return;
         const rect = containerRef.current.getBoundingClientRect();
         const relativeY = clientY - rect.top;
-        // Add padding at top and bottom for easier max/min selection
         const paddedHeight = rect.height * 0.9;
         const paddedTop = rect.height * 0.05;
         const adjustedY = relativeY - paddedTop;
@@ -103,15 +91,8 @@ export default function WaterWidget() {
         calculateFillFromEvent(e.clientY);
     };
 
-    const handleMouseUp = () => {
-        setIsDragging(false);
-    };
+    const handleMouseUp = () => setIsDragging(false);
 
-    const handleMouseLeave = () => {
-        // Don't stop dragging on leave - let them continue if they come back
-    };
-
-    // Touch events for mobile
     const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
         if (!selectedDrink) return;
         setIsDragging(true);
@@ -124,9 +105,7 @@ export default function WaterWidget() {
         calculateFillFromEvent(e.touches[0].clientY);
     };
 
-    const handleTouchEnd = () => {
-        setIsDragging(false);
-    };
+    const handleTouchEnd = () => setIsDragging(false);
 
     const confirmDrink = () => {
         if (!selectedDrink) return;
@@ -155,10 +134,21 @@ export default function WaterWidget() {
         saveData({ ...data, amount: 0, history: [] });
     };
 
+    const undoLast = () => {
+        if (data.history.length === 0) return;
+        const lastEntry = data.history[data.history.length - 1];
+        const newHistory = data.history.slice(0, -1);
+        const newData = {
+            ...data,
+            amount: Math.max(0, data.amount - lastEntry.ml),
+            history: newHistory,
+        };
+        saveData(newData);
+    };
+
     const percentage = Math.min((data.amount / data.goal) * 100, 100);
     const currentMl = Math.round((fillLevel / 100) * (selectedDrink?.maxMl || 0));
 
-    // Calculate color layers
     const calculateLayers = () => {
         if (data.history.length === 0) return [];
         let currentHeight = 0;
@@ -204,9 +194,7 @@ export default function WaterWidget() {
                     >
                         {selectedDrink.containerType === "tumbler" && (
                             <svg viewBox="0 0 70 100" className="w-full h-full">
-                                <defs>
-                                    <clipPath id="tClip"><path d="M 12 10 L 14 88 Q 14 92 18 92 L 52 92 Q 56 92 56 88 L 58 10 Z" /></clipPath>
-                                </defs>
+                                <defs><clipPath id="tClip"><path d="M 12 10 L 14 88 Q 14 92 18 92 L 52 92 Q 56 92 56 88 L 58 10 Z" /></clipPath></defs>
                                 <path d="M 10 8 L 13 90 Q 13 95 18 95 L 52 95 Q 57 95 57 90 L 60 8 Q 60 4 55 4 L 15 4 Q 10 4 10 8 Z"
                                     fill="#404040" stroke="#555" strokeWidth="2" />
                                 <rect x="10" y={95 - (fillLevel * 0.85)} width="50" height={fillLevel * 0.85}
@@ -215,9 +203,7 @@ export default function WaterWidget() {
                         )}
                         {selectedDrink.containerType === "mug" && (
                             <svg viewBox="0 0 70 100" className="w-full h-full">
-                                <defs>
-                                    <clipPath id="mClip"><path d="M 8 18 L 8 82 Q 8 88 14 88 L 42 88 Q 48 88 48 82 L 48 18 Z" /></clipPath>
-                                </defs>
+                                <defs><clipPath id="mClip"><path d="M 8 18 L 8 82 Q 8 88 14 88 L 42 88 Q 48 88 48 82 L 48 18 Z" /></clipPath></defs>
                                 <path d="M 6 16 L 6 84 Q 6 92 14 92 L 42 92 Q 50 92 50 84 L 50 16 Q 50 12 46 12 L 10 12 Q 6 12 6 16 Z"
                                     fill="#505050" stroke="#666" strokeWidth="2" />
                                 <path d="M 50 30 Q 62 30 62 50 Q 62 70 50 70" fill="none" stroke="#666" strokeWidth="5" />
@@ -227,9 +213,7 @@ export default function WaterWidget() {
                         )}
                         {selectedDrink.containerType === "glass" && (
                             <svg viewBox="0 0 70 100" className="w-full h-full">
-                                <defs>
-                                    <clipPath id="gClip"><path d="M 16 10 L 12 88 Q 12 92 20 92 L 50 92 Q 58 92 58 88 L 54 10 Z" /></clipPath>
-                                </defs>
+                                <defs><clipPath id="gClip"><path d="M 16 10 L 12 88 Q 12 92 20 92 L 50 92 Q 58 92 58 88 L 54 10 Z" /></clipPath></defs>
                                 <path d="M 15 8 L 11 90 Q 11 95 20 95 L 50 95 Q 59 95 59 90 L 55 8 Q 54 4 48 4 L 22 4 Q 16 4 15 8 Z"
                                     fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
                                 <rect x="11" y={95 - (fillLevel * 0.85)} width="48" height={fillLevel * 0.85}
@@ -238,9 +222,7 @@ export default function WaterWidget() {
                         )}
                         {selectedDrink.containerType === "bottle" && (
                             <svg viewBox="0 0 70 100" className="w-full h-full">
-                                <defs>
-                                    <clipPath id="bClip"><path d="M 22 32 L 22 88 Q 22 92 28 92 L 42 92 Q 48 92 48 88 L 48 32 Q 48 25 42 20 L 28 20 Q 22 25 22 32 Z" /></clipPath>
-                                </defs>
+                                <defs><clipPath id="bClip"><path d="M 22 32 L 22 88 Q 22 92 28 92 L 42 92 Q 48 92 48 88 L 48 32 Q 48 25 42 20 L 28 20 Q 22 25 22 32 Z" /></clipPath></defs>
                                 <rect x="28" y="4" width="14" height="14" rx="2" fill="#444" stroke="#555" />
                                 <path d="M 28 18 Q 20 24 20 34 L 20 90 Q 20 96 28 96 L 42 96 Q 50 96 50 90 L 50 34 Q 50 24 42 18 Z"
                                     fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.25)" strokeWidth="2" />
@@ -291,151 +273,164 @@ export default function WaterWidget() {
                         </div>
                     </div>
 
-                    {/* Cute Llama Design */}
-                    <div className="flex-1 flex items-center justify-center overflow-visible z-10 relative">
-                        <svg viewBox="0 0 140 150" className="w-36 h-36" style={{ overflow: "visible" }}>
-                            <style>{`
-                                @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-                                .animate-float { animation: float 3s ease-in-out infinite; }
-                            `}</style>
-
-                            {/* Grassland Base - Rounded Gentle Hill */}
-                            <path
-                                d="M -80 220 Q 70 110 220 220 Z"
-                                fill="#66BB6A"
-                                stroke="#4CAF50"
-                                strokeWidth="2"
-                            />
-                            <path
-                                d="M -80 230 Q 70 120 220 230 Z"
-                                fill="#43A047"
-                                opacity="0.6"
-                            />
-
-                            {/* Flowers - Adjusted positions for hill curve */}
-                            <g transform="translate(10, 165)">
-                                <circle r="3" fill="white" />
-                                <circle r="1.5" fill="#FFEB3B" />
-                            </g>
-                            <g transform="translate(120, 162)">
-                                <circle r="3" fill="white" />
-                                <circle r="1.5" fill="#FFEB3B" />
-                            </g>
-                            <g transform="translate(40, 160)">
-                                <circle r="2" fill="white" />
-                                <circle r="1" fill="#FFEB3B" />
-                            </g>
-                            <g transform="translate(90, 158)">
-                                <circle r="2" fill="white" />
-                                <circle r="1" fill="#FFEB3B" />
-                            </g>
-
-                            <g className="animate-float" transform="translate(0, -20)">
-                                {/* Llama Body Clip */}
-                                <defs>
-                                    <clipPath id="slimeClip">
-                                        <path d={SLIME_PATH} />
-                                    </clipPath>
-                                </defs>
-
-                                {/* Base Body (Transparent/Outline) */}
-                                <path d={SLIME_PATH} fill="rgba(41, 182, 246, 0.1)" stroke="rgba(41, 182, 246, 0.3)" strokeWidth="2" />
-
-                                {/* Liquid Fill - Dynamic Colors */}
-                                <g clipPath="url(#slimeClip)">
-                                    {/* Fill layers */}
-                                    {layers.map((layer, i) => (
-                                        <rect
-                                            key={i}
-                                            x="0"
-                                            y={155 - (layer.startY + layer.height) * 1.5}
-                                            width="140"
-                                            height={layer.height * 1.5 + 2} // +2 overlap to prevent gaps
-                                            fill={layer.color}
-                                            opacity="0.9"
-                                        />
-                                    ))}
-
-                                    {/* Wave effect - Matches top layer color */}
-                                    {layers.length > 0 && (
-                                        <>
-                                            <path
-                                                d={`M 0 ${155 - percentage * 1.5} 
-                                                    Q 35 ${155 - percentage * 1.5 - 10} 70 ${155 - percentage * 1.5}
-                                                    Q 105 ${155 - percentage * 1.5 + 10} 140 ${155 - percentage * 1.5}
-                                                    V ${155 - percentage * 1.5 + 20} H 0 Z`}
-                                                fill={layers[layers.length - 1]?.color}
-                                                opacity="0.4"
-                                            >
-                                                <animate
-                                                    attributeName="d"
-                                                    dur="3s"
-                                                    repeatCount="indefinite"
-                                                    values={`
-                                                        M 0 ${155 - percentage * 1.5} Q 35 ${155 - percentage * 1.5 - 10} 70 ${155 - percentage * 1.5} Q 105 ${155 - percentage * 1.5 + 10} 140 ${155 - percentage * 1.5} V ${155 - percentage * 1.5 + 20} H 0 Z;
-                                                        M 0 ${155 - percentage * 1.5} Q 35 ${155 - percentage * 1.5 + 10} 70 ${155 - percentage * 1.5} Q 105 ${155 - percentage * 1.5 - 10} 140 ${155 - percentage * 1.5} V ${155 - percentage * 1.5 + 20} H 0 Z;
-                                                        M 0 ${155 - percentage * 1.5} Q 35 ${155 - percentage * 1.5 - 10} 70 ${155 - percentage * 1.5} Q 105 ${155 - percentage * 1.5 + 10} 140 ${155 - percentage * 1.5} V ${155 - percentage * 1.5 + 20} H 0 Z
-                                                    `}
-                                                />
-                                            </path>
-                                            <path
-                                                d={`M 0 ${155 - percentage * 1.5} 
-                                                    Q 35 ${155 - percentage * 1.5 + 15} 70 ${155 - percentage * 1.5}
-                                                    Q 105 ${155 - percentage * 1.5 - 15} 140 ${155 - percentage * 1.5}
-                                                    V ${155 - percentage * 1.5 + 20} H 0 Z`}
-                                                fill={layers[layers.length - 1]?.color}
-                                                opacity="0.6"
-                                            >
-                                                <animate
-                                                    attributeName="d"
-                                                    dur="1.5s"
-                                                    repeatCount="indefinite"
-                                                    values={`
-                                                        M 0 ${155 - percentage * 1.5} Q 35 ${155 - percentage * 1.5 + 15} 70 ${155 - percentage * 1.5} Q 105 ${155 - percentage * 1.5 - 15} 140 ${155 - percentage * 1.5} V ${155 - percentage * 1.5 + 20} H 0 Z;
-                                                        M 0 ${155 - percentage * 1.5} Q 35 ${155 - percentage * 1.5 - 15} 70 ${155 - percentage * 1.5} Q 105 ${155 - percentage * 1.5 + 15} 140 ${155 - percentage * 1.5} V ${155 - percentage * 1.5 + 20} H 0 Z;
-                                                        M 0 ${155 - percentage * 1.5} Q 35 ${155 - percentage * 1.5 + 15} 70 ${155 - percentage * 1.5} Q 105 ${155 - percentage * 1.5 - 15} 140 ${155 - percentage * 1.5} V ${155 - percentage * 1.5 + 20} H 0 Z
-                                                    `}
-                                                />
-                                            </path>
-                                        </>
-                                    )}
-                                </g>
-
-                                {/* Soft Highlight for Texture */}
-                                <ellipse cx="45" cy="60" rx="15" ry="8" transform="rotate(-45 45 60)" fill="white" opacity="0.2" filter="blur(2px)" />
-
-                                {/* Slime Face (Always visible) */}
-                                <g transform="translate(0, 10)">
-                                    {/* Eyes - Larger and closer */}
-                                    <circle cx="52" cy="75" r="14" fill="white" />
-                                    <circle cx="52" cy="75" r="3" fill="black" />
-
-                                    <circle cx="88" cy="75" r="14" fill="white" />
-                                    <circle cx="88" cy="75" r="3" fill="black" />
-
-                                    {/* Mouth - Wide smile with color */}
-                                    <path
-                                        d="M 45 95 Q 70 120 95 95 Q 70 110 45 95 Z"
-                                        fill="#FF8A65"
-                                        stroke="#333"
-                                        strokeWidth="1"
+                    {/* Water filling the widget - reaches up to bar at 100% */}
+                    <div
+                        className="absolute bottom-0 left-0 right-0 transition-all duration-700 ease-out overflow-visible"
+                        style={{ height: `${Math.min(percentage, 100) * 0.85}%` }}
+                    >
+                        {/* Multi-color liquid layers */}
+                        <div className="absolute inset-0 flex flex-col-reverse">
+                            {layers.map((layer, i) => {
+                                const layerHeight = percentage > 0 ? (layer.height / percentage) * 100 : 0;
+                                return (
+                                    <div
+                                        key={i}
+                                        style={{
+                                            height: `${layerHeight}%`,
+                                            backgroundColor: layer.color,
+                                            opacity: 0.75,
+                                        }}
                                     />
-                                </g>
-                            </g>
+                                );
+                            })}</div>
 
-                            {/* Sparkles */}
+                        {/* Animated wave effect - at top of water surface */}
+                        {percentage > 0 && (
+                            <div className="absolute left-0 right-0 h-12 pointer-events-none" style={{ top: '-6px' }}>
+                                {/* Wave layer 1 */}
+                                <div
+                                    className="absolute inset-0"
+                                    style={{
+                                        background: `radial-gradient(ellipse 80% 60% at 20% 0%, ${layers[layers.length - 1]?.color || '#29B6F6'} 0%, transparent 70%),
+                                                     radial-gradient(ellipse 60% 50% at 50% 0%, ${layers[layers.length - 1]?.color || '#29B6F6'} 0%, transparent 70%),
+                                                     radial-gradient(ellipse 70% 55% at 80% 0%, ${layers[layers.length - 1]?.color || '#29B6F6'} 0%, transparent 70%)`,
+                                        animation: 'waveBob1 2s ease-in-out infinite',
+                                        opacity: 0.8,
+                                    }}
+                                />
+                                {/* Wave layer 2 */}
+                                <div
+                                    className="absolute inset-0"
+                                    style={{
+                                        background: `radial-gradient(ellipse 70% 50% at 35% 0%, ${layers[layers.length - 1]?.color || '#29B6F6'} 0%, transparent 70%),
+                                                     radial-gradient(ellipse 80% 60% at 65% 0%, ${layers[layers.length - 1]?.color || '#29B6F6'} 0%, transparent 70%),
+                                                     radial-gradient(ellipse 60% 45% at 95% 0%, ${layers[layers.length - 1]?.color || '#29B6F6'} 0%, transparent 70%)`,
+                                        animation: 'waveBob2 2.5s ease-in-out infinite',
+                                        opacity: 0.6,
+                                    }}
+                                />
+                                {/* Wave layer 3 - highlights */}
+                                <div
+                                    className="absolute inset-0"
+                                    style={{
+                                        background: `radial-gradient(ellipse 50% 40% at 25% 0%, rgba(255,255,255,0.35) 0%, transparent 70%),
+                                                     radial-gradient(ellipse 40% 35% at 60% 0%, rgba(255,255,255,0.25) 0%, transparent 70%),
+                                                     radial-gradient(ellipse 45% 38% at 85% 0%, rgba(255,255,255,0.3) 0%, transparent 70%)`,
+                                        animation: 'waveBob3 3s ease-in-out infinite',
+                                        opacity: 0.7,
+                                    }}
+                                />
+                            </div>
+                        )}
+
+                        {/* Bubbles */}
+                        {percentage > 20 && (
+                            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                                <div className="absolute w-3 h-3 rounded-full bg-white/30 animate-bubble" style={{ left: '20%', animationDelay: '0s' }} />
+                                <div className="absolute w-2 h-2 rounded-full bg-white/20 animate-bubble" style={{ left: '50%', animationDelay: '1s' }} />
+                                <div className="absolute w-4 h-4 rounded-full bg-white/25 animate-bubble" style={{ left: '75%', animationDelay: '2s' }} />
+                                <div className="absolute w-2 h-2 rounded-full bg-white/30 animate-bubble" style={{ left: '35%', animationDelay: '0.5s' }} />
+                                <div className="absolute w-3 h-3 rounded-full bg-white/20 animate-bubble" style={{ left: '60%', animationDelay: '1.5s' }} />
+                                <div className="absolute w-2 h-2 rounded-full bg-white/25 animate-bubble" style={{ left: '10%', animationDelay: '2.5s' }} />
+                            </div>
+                        )}
+
+                        {/* Water shimmer/reflection */}
+                        <div
+                            className="absolute inset-0 pointer-events-none"
+                            style={{
+                                background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 40%, rgba(255,255,255,0.05) 100%)',
+                                animation: 'shimmer 4s ease-in-out infinite',
+                            }}
+                        />
+                    </div>
+
+                    {/* Large Slime floating on top - centered */}
+                    <div className="flex-1 flex items-center justify-center z-10 relative overflow-hidden">
+                        <div className="relative flex items-center justify-center" style={{ width: '100%', height: '100%', maxWidth: '360px', maxHeight: '360px' }}>
+                            {/* Float wrapper */}
+                            <div style={{ animation: 'slimeFloat 3s ease-in-out infinite' }}>
+                                {/* Squish wrapper */}
+                                <div style={{ animation: 'slimeSquish 2.5s ease-in-out infinite', transformOrigin: 'center bottom' }}>
+                                    {/* Wobble wrapper */}
+                                    <div style={{ animation: 'slimeWobble 5s ease-in-out infinite' }}>
+                                        <img
+                                            src="/slime.png"
+                                            alt="Slime"
+                                            className="w-full h-full object-contain pointer-events-none"
+                                            style={{
+                                                filter: 'drop-shadow(0 12px 30px rgba(0,0,0,0.6))',
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Victory sparkles */}
                             {percentage >= 100 && (
-                                <g>
-                                    <text x="20" y="40" fontSize="12" className="animate-pulse">✨</text>
-                                    <text x="110" y="30" fontSize="12" className="animate-pulse" style={{ animationDelay: "0.5s" }}>⭐</text>
-                                </g>
+                                <>
+                                    <span className="absolute -top-4 left-8 text-2xl animate-pulse">✨</span>
+                                    <span className="absolute top-0 right-10 text-2xl animate-pulse" style={{ animationDelay: '0.3s' }}>⭐</span>
+                                    <span className="absolute top-8 left-1/2 -translate-x-1/2 text-xl animate-bounce">🎉</span>
+                                </>
                             )}
-                        </svg>
+                        </div>
+
+                        <style>{`
+                            @keyframes slimeFloat {
+                                0%, 100% { transform: translateY(0); }
+                                50% { transform: translateY(-12px); }
+                            }
+                            @keyframes slimeSquish {
+                                0%, 100% { transform: scaleX(1) scaleY(1); }
+                                30% { transform: scaleX(1.04) scaleY(0.96); }
+                                60% { transform: scaleX(0.96) scaleY(1.04); }
+                            }
+                            @keyframes slimeWobble {
+                                0%, 100% { transform: rotate(0deg); }
+                                25% { transform: rotate(2deg); }
+                                75% { transform: rotate(-2deg); }
+                            }
+                            @keyframes waveBob1 {
+                                0%, 100% { transform: translateY(0); }
+                                50% { transform: translateY(-8px); }
+                            }
+                            @keyframes waveBob2 {
+                                0%, 100% { transform: translateY(-4px); }
+                                50% { transform: translateY(4px); }
+                            }
+                            @keyframes waveBob3 {
+                                0%, 100% { transform: translateY(2px); }
+                                50% { transform: translateY(-6px); }
+                            }
+                            @keyframes shimmer {
+                                0%, 100% { opacity: 0.3; }
+                                50% { opacity: 0.6; }
+                            }
+                            @keyframes bubble {
+                                0% { bottom: -10%; opacity: 0; transform: translateX(0) scale(0.5); }
+                                10% { opacity: 0.8; }
+                                100% { bottom: 100%; opacity: 0; transform: translateX(20px) scale(1.2); }
+                            }
+                            .animate-bubble {
+                                animation: bubble 4s ease-in-out infinite;
+                            }
+                        `}</style>
                     </div>
 
                     {/* Drink buttons */}
                     <div className="px-2 pb-2 flex-shrink-0 z-10">
-                        <div className="grid grid-cols-7 gap-1">
+                        <div className="grid grid-cols-8 gap-1">
                             {DRINK_TYPES.map((drink) => (
                                 <button
                                     key={drink.id}
@@ -446,6 +441,14 @@ export default function WaterWidget() {
                                     <span className="text-base group-hover:scale-110 transition-transform">{drink.emoji}</span>
                                 </button>
                             ))}
+                            <button
+                                onClick={undoLast}
+                                disabled={data.history.length === 0}
+                                className={`flex flex-col items-center p-1.5 bg-[#151515] border border-[#252525] rounded transition-all group ${data.history.length === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:border-yellow-500/50'}`}
+                                title="1つ戻る"
+                            >
+                                <Undo2 size={16} className="text-gray-500 group-hover:text-yellow-400 transition-colors" />
+                            </button>
                             <button
                                 onClick={resetDay}
                                 className="flex flex-col items-center p-1.5 bg-[#151515] border border-[#252525] hover:border-red-500/50 rounded transition-all group"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, X, ExternalLink, Edit2 } from "lucide-react";
+import { Plus, X, Edit2, ChevronUp, ChevronDown } from "lucide-react";
 
 interface Bookmark {
     id: number;
@@ -80,6 +80,14 @@ export default function BookmarkWidget() {
         setShowAdd(false);
     };
 
+    const moveBookmark = (index: number, direction: 'up' | 'down') => {
+        const newIndex = direction === 'up' ? index - 1 : index + 1;
+        if (newIndex < 0 || newIndex >= bookmarks.length) return;
+        const newBookmarks = [...bookmarks];
+        [newBookmarks[index], newBookmarks[newIndex]] = [newBookmarks[newIndex], newBookmarks[index]];
+        saveBookmarks(newBookmarks);
+    };
+
     const getFavicon = (bookmarkUrl: string) => {
         try {
             const domain = new URL(bookmarkUrl).hostname;
@@ -98,7 +106,7 @@ export default function BookmarkWidget() {
             <div className="flex-1 p-2 overflow-auto min-h-0">
                 {/* Bookmark List */}
                 <div className="space-y-1">
-                    {bookmarks.map((bookmark) => (
+                    {bookmarks.map((bookmark, index) => (
                         <div
                             key={bookmark.id}
                             className="group flex items-center gap-2 p-1.5 hover:bg-[#252525] transition-colors"
@@ -117,7 +125,22 @@ export default function BookmarkWidget() {
                             >
                                 {bookmark.name}
                             </a>
-                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                            {/* Action buttons on hover */}
+                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                                <button
+                                    onClick={() => moveBookmark(index, 'up')}
+                                    disabled={index === 0}
+                                    className={`p-0 ${index === 0 ? 'text-gray-700' : 'text-gray-500 hover:text-gray-300'}`}
+                                >
+                                    <ChevronUp size={12} />
+                                </button>
+                                <button
+                                    onClick={() => moveBookmark(index, 'down')}
+                                    disabled={index === bookmarks.length - 1}
+                                    className={`p-0 ${index === bookmarks.length - 1 ? 'text-gray-700' : 'text-gray-500 hover:text-gray-300'}`}
+                                >
+                                    <ChevronDown size={12} />
+                                </button>
                                 <button
                                     onClick={() => startEdit(bookmark)}
                                     className="p-0.5 text-gray-600 hover:text-gray-300"

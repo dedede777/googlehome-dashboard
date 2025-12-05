@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { Responsive, WidthProvider, Layout } from "react-grid-layout";
-import { Plus, X, Search, GripVertical, Image as ImageIcon, Lock, Unlock } from "lucide-react";
+import { Plus, X, Search, GripVertical, Image as ImageIcon, Lock, Unlock, Eye, EyeOff } from "lucide-react";
 import ThemeSwitcher from "./ThemeSwitcher";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -28,6 +28,8 @@ import WaterWidget from "./widgets/WaterWidget";
 import PlantWidget from "./widgets/PlantWidget";
 import ExpenseWidget from "./widgets/ExpenseWidget";
 import ZenWidget from "./widgets/ZenWidget";
+import HabitWidget from "./widgets/HabitWidget";
+import ExchangeWidget from "./widgets/ExchangeWidget";
 import GoogleAppsLauncher from "./GoogleAppsLauncher";
 import DataManagementModal from "./DataManagementModal";
 import CursorEffects from "./CursorEffects";
@@ -56,6 +58,8 @@ const WIDGET_COMPONENTS: Record<string, React.ComponentType<Record<string, unkno
     plant: PlantWidget,
     expense: ExpenseWidget,
     zen: ZenWidget,
+    habit: HabitWidget,
+    exchange: ExchangeWidget,
 };
 
 const WIDGET_CATALOG = [
@@ -68,6 +72,8 @@ const WIDGET_CATALOG = [
     { id: "plant", name: "Plant", icon: "🌱", category: "Lifestyle" },
     { id: "expense", name: "Expense", icon: "💰", category: "Lifestyle" },
     { id: "zen", name: "Zen", icon: "🧘", category: "Lifestyle" },
+    { id: "habit", name: "Habit", icon: "✨", category: "Lifestyle" },
+    { id: "exchange", name: "Exchange", icon: "💱", category: "Info" },
     { id: "tasks", name: "Tasks", icon: "✅", category: "Productivity" },
     { id: "pomodoro", name: "Pomodoro", icon: "🍅", category: "Productivity" },
     { id: "memo", name: "Memo", icon: "📝", category: "Productivity" },
@@ -91,6 +97,7 @@ const STORAGE_KEY = "dashboard-layout";
 const WIDGETS_KEY = "dashboard-widgets";
 const COVER_KEY = "dashboard-cover";
 const TITLE_KEY = "dashboard-title";
+const HEADER_HIDDEN_KEY = "dashboard-header-hidden";
 
 // Default layout
 const DEFAULT_WIDGETS: WidgetInstance[] = [
@@ -121,6 +128,7 @@ export default function Dashboard() {
     const [coverImage, setCoverImage] = useState(DEFAULT_COVER);
     const [title, setTitle] = useState("Command Center");
     const [subtitle, setSubtitle] = useState("Your personal dashboard");
+    const [headerHidden, setHeaderHidden] = useState(false);
 
     useEffect(() => {
         setMounted(true);
@@ -137,6 +145,8 @@ export default function Dashboard() {
             setTitle(parsed.title);
             setSubtitle(parsed.subtitle);
         }
+        const savedHeaderHidden = localStorage.getItem(HEADER_HIDDEN_KEY);
+        if (savedHeaderHidden) setHeaderHidden(JSON.parse(savedHeaderHidden));
     }, []);
 
     const saveWidgets = (w: WidgetInstance[]) => {
@@ -313,48 +323,68 @@ export default function Dashboard() {
 
     return (
         <div className="min-h-screen bg-[var(--color-bg)] p-4">
+            {/* Toggle Header Button (always visible) */}
+            {headerHidden && (
+                <button
+                    onClick={() => { setHeaderHidden(false); localStorage.setItem(HEADER_HIDDEN_KEY, "false"); }}
+                    className="fixed top-4 right-4 z-50 p-2 bg-[#1a1a1a]/80 border border-[#2a2a2a] hover:border-cyan-500/50 transition-colors backdrop-blur-sm"
+                    title="ヘッダーを表示"
+                >
+                    <Eye size={16} className="text-gray-400 hover:text-cyan-400" />
+                </button>
+            )}
+
             {/* Top Bar */}
-            <div className="flex items-center gap-2 mb-4">
-                <form onSubmit={handleSearch} className="flex-1">
-                    <div className="flex items-center bg-[#1a1a1a] border border-[#2a2a2a] px-4 py-3">
-                        <Search size={16} className="text-gray-500 mr-3" />
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search..."
-                            className="flex-1 bg-transparent border-none outline-none text-gray-300 text-sm"
-                        />
-                    </div>
-                </form>
-                <ThemeSwitcher />
-                <GoogleAppsLauncher />
-                <button
-                    onClick={() => setIsDataModalOpen(true)}
-                    className="flex items-center gap-2 px-3 py-3 bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[var(--accent)] transition-colors text-xs font-bold text-gray-400 hover:text-[var(--accent)]"
-                    title="Data Management"
-                >
-                    <Database size={16} />
-                    <span className="hidden sm:inline">DATA</span>
-                </button>
-                <button
-                    onClick={() => setIsLocked(!isLocked)}
-                    className={`p-3 bg-[#1a1a1a] border transition-colors ${isLocked
-                        ? "border-cyan-500/50 text-cyan-400"
-                        : "border-[#2a2a2a] hover:border-[#3a3a3a] text-gray-400"
-                        }`}
-                    title={isLocked ? "Unlock Layout" : "Lock Layout"}
-                >
-                    {isLocked ? <Lock size={18} /> : <Unlock size={18} />}
-                </button>
-                <button
-                    onClick={() => setShowPanel(!showPanel)}
-                    className="p-3 bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#3a3a3a] transition-colors"
-                    title="Add Widget"
-                >
-                    <Plus size={18} className="text-gray-400" />
-                </button>
-            </div>
+            {!headerHidden && (
+                <div className="flex items-center gap-2 mb-4">
+                    <form onSubmit={handleSearch} className="flex-1">
+                        <div className="flex items-center bg-[#1a1a1a] border border-[#2a2a2a] px-4 py-3">
+                            <Search size={16} className="text-gray-500 mr-3" />
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search..."
+                                className="flex-1 bg-transparent border-none outline-none text-gray-300 text-sm"
+                            />
+                        </div>
+                    </form>
+                    <ThemeSwitcher />
+                    <GoogleAppsLauncher />
+                    <button
+                        onClick={() => setIsDataModalOpen(true)}
+                        className="flex items-center gap-2 px-3 py-3 bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[var(--accent)] transition-colors text-xs font-bold text-gray-400 hover:text-[var(--accent)]"
+                        title="Data Management"
+                    >
+                        <Database size={16} />
+                        <span className="hidden sm:inline">DATA</span>
+                    </button>
+                    <button
+                        onClick={() => setIsLocked(!isLocked)}
+                        className={`p-3 bg-[#1a1a1a] border transition-colors ${isLocked
+                            ? "border-cyan-500/50 text-cyan-400"
+                            : "border-[#2a2a2a] hover:border-[#3a3a3a] text-gray-400"
+                            }`}
+                        title={isLocked ? "Unlock Layout" : "Lock Layout"}
+                    >
+                        {isLocked ? <Lock size={18} /> : <Unlock size={18} />}
+                    </button>
+                    <button
+                        onClick={() => setShowPanel(!showPanel)}
+                        className="p-3 bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#3a3a3a] transition-colors"
+                        title="Add Widget"
+                    >
+                        <Plus size={18} className="text-gray-400" />
+                    </button>
+                    <button
+                        onClick={() => { setHeaderHidden(true); localStorage.setItem(HEADER_HIDDEN_KEY, "true"); }}
+                        className="p-3 bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#3a3a3a] transition-colors"
+                        title="ヘッダーを隠す"
+                    >
+                        <EyeOff size={18} className="text-gray-400" />
+                    </button>
+                </div>
+            )}
 
             {/* Widget Panel */}
             {showPanel && (
@@ -407,14 +437,14 @@ export default function Dashboard() {
                 {widgets.map((widget) => {
                     const WidgetComponent = WIDGET_COMPONENTS[widget.type];
                     return (
-                        <div key={widget.id} className="widget-wrapper">
-                            <div className="widget-card bg-[#1a1a1a] border border-[#2a2a2a] overflow-hidden group h-full">
-                                <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div key={widget.id} className="widget-wrapper overflow-visible">
+                            <div className="widget-card bg-[#1a1a1a] border border-[#2a2a2a] overflow-visible group h-full relative">
+                                <div className="absolute -top-2 -right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button
                                         onClick={() => removeWidget(widget.id)}
-                                        className="p-1.5 bg-[#0a0a0a] border border-[#2a2a2a] hover:border-red-500/50"
+                                        className="w-4 h-4 flex items-center justify-center bg-red-500 hover:bg-red-600 rounded-full shadow-lg"
                                     >
-                                        <X size={12} className="text-gray-500 hover:text-red-400" />
+                                        <X size={8} className="text-white" />
                                     </button>
                                 </div>
                                 {WidgetComponent && (
