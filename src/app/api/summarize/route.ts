@@ -7,6 +7,7 @@ export async function POST(req: NextRequest) {
         const groqApiKey = process.env.GROQ_API_KEY;
 
         if (!groqApiKey) {
+            console.error("GROQ_API_KEY is not set");
             return NextResponse.json(
                 { error: "GROQ_API_KEY not configured" },
                 { status: 500 }
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
 【記事タイトル】
 ${title}
 
-${content ? `【記事内容】\n${content}` : ""}
+${content ? `【記事内容】\n${content.slice(0, 2000)}` : ""}
 
 【要約】`;
 
@@ -35,7 +36,7 @@ ${content ? `【記事内容】\n${content}` : ""}
                 "Authorization": `Bearer ${groqApiKey}`
             },
             body: JSON.stringify({
-                model: "llama-3.3-70b-versatile",
+                model: "llama-3.1-8b-instant",
                 messages: [
                     { role: "user", content: prompt }
                 ],
@@ -45,9 +46,12 @@ ${content ? `【記事内容】\n${content}` : ""}
         });
 
         if (!response.ok) {
-            const error = await response.json();
-            console.error("Groq API error:", error);
-            throw new Error("Groq API request failed");
+            const errorText = await response.text();
+            console.error("Groq API error:", response.status, errorText);
+            return NextResponse.json(
+                { error: `Groq API error: ${response.status}`, summary: "" },
+                { status: 200 }
+            );
         }
 
         const data = await response.json();
@@ -57,8 +61,8 @@ ${content ? `【記事内容】\n${content}` : ""}
     } catch (error) {
         console.error("Summarize error:", error);
         return NextResponse.json(
-            { error: "Failed to summarize" },
-            { status: 500 }
+            { error: "Failed to summarize", summary: "" },
+            { status: 200 }
         );
     }
 }
