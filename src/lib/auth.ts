@@ -59,20 +59,25 @@ export const authOptions: NextAuthOptions = {
         async jwt({ token, account }) {
             // Initial sign in
             if (account) {
+                console.log("Initial sign in, storing tokens");
                 return {
                     accessToken: account.access_token,
-                    accessTokenExpires: Date.now() + (account.expires_at! * 1000),
+                    // expires_at is already in seconds since epoch
+                    accessTokenExpires: account.expires_at ? account.expires_at * 1000 : Date.now() + 3600 * 1000,
                     refreshToken: account.refresh_token,
                     user: token.user,
                 };
             }
 
             // Return previous token if the access token has not expired yet
-            if (Date.now() < (token.accessTokenExpires as number)) {
+            // Add 5 minute buffer to refresh before actual expiration
+            const expiresAt = token.accessTokenExpires as number;
+            if (Date.now() < expiresAt - 5 * 60 * 1000) {
                 return token;
             }
 
-            // Access token has expired, try to update it
+            // Access token has expired or will expire soon, try to update it
+            console.log("Token expired or expiring soon, refreshing...");
             return refreshAccessToken(token);
         },
         async session({ session, token }) {

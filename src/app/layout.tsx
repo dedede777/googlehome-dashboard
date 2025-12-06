@@ -12,8 +12,8 @@ const dotGothic = DotGothic16({
 });
 
 export const metadata: Metadata = {
-  title: "Command Center",
-  description: "Personal Dashboard - Dark Brutalism",
+  title: "Dashboard",
+  description: "Personal Dashboard",
 };
 
 export default function RootLayout({
