@@ -30,6 +30,7 @@ import ExpenseWidget from "./widgets/ExpenseWidget";
 import ZenWidget from "./widgets/ZenWidget";
 import HabitWidget from "./widgets/HabitWidget";
 import ExchangeWidget from "./widgets/ExchangeWidget";
+import FlashcardWidget from "./widgets/FlashcardWidget";
 import GoogleAppsLauncher from "./GoogleAppsLauncher";
 import DataManagementModal from "./DataManagementModal";
 import CursorEffects from "./CursorEffects";
@@ -60,6 +61,7 @@ const WIDGET_COMPONENTS: Record<string, React.ComponentType<Record<string, unkno
     zen: ZenWidget,
     habit: HabitWidget,
     exchange: ExchangeWidget,
+    flashcard: FlashcardWidget,
 };
 
 const WIDGET_CATALOG = [
@@ -78,6 +80,7 @@ const WIDGET_CATALOG = [
     { id: "pomodoro", name: "Pomodoro", icon: "🍅", category: "Productivity" },
     { id: "memo", name: "Memo", icon: "📝", category: "Productivity" },
     { id: "quote", name: "Quote", icon: "💬", category: "Productivity" },
+    { id: "flashcard", name: "English", icon: "🎯", category: "Learning" },
     { id: "aichat", name: "AI", icon: "🤖", category: "Links" },
     { id: "sns", name: "SNS", icon: "📱", category: "Links" },
     { id: "bookmark", name: "Bookmarks", icon: "🔖", category: "Links" },

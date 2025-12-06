@@ -221,7 +221,7 @@ export default function RSSWidget() {
                     <div className="flex items-center justify-between mb-3 p-2 bg-[#252525] border border-[#3a3a3a]">
                         <div className="flex items-center gap-1.5">
                             <Sparkles size={12} className="text-yellow-500" />
-                            <span className="text-[10px] text-gray-300">AI要約 (Gemini)</span>
+                            <span className="text-[10px] text-gray-300">AI要約 (Groq)</span>
                         </div>
                         <button
                             onClick={() => saveSettings(!enableSummary)}

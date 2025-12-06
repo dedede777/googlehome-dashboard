@@ -104,13 +104,13 @@ textarea:focus {
 }
 
 .widget-card:hover {
-  transform: translateY(-6px);
+  transform: translateY(-2px);
   box-shadow:
-    0 15px 35px rgba(0, 0, 0, 0.4),
-    0 0 30px rgba(34, 211, 238, 0.15),
-    0 0 60px rgba(139, 92, 246, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  border-color: rgba(34, 211, 238, 0.3) !important;
+    0 10px 25px rgba(0, 0, 0, 0.35),
+    0 0 25px rgba(34, 211, 238, 0.12),
+    0 0 40px rgba(139, 92, 246, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  border-color: rgba(34, 211, 238, 0.25) !important;
 }
 
 .widget-card::before {
