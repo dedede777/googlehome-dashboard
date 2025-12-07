@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Droplets, Sun, Sparkles, Heart, Star, Music } from "lucide-react";
+import { Droplets, Sun, Sparkles, Heart, Star } from "lucide-react";
 
 const STORAGE_KEY = "dashboard-virtual-plant";
 
