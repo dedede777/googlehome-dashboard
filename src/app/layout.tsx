@@ -3,6 +3,8 @@ import { Inter, DotGothic16 } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import SessionProvider from "@/components/SessionProvider";
+import { AISettingsProvider } from "@/contexts/AISettingsContext";
+import { GamificationProvider } from "@/contexts/GamificationContext";
 
 const inter = Inter({ subsets: ["latin"] });
 const dotGothic = DotGothic16({
@@ -26,10 +28,15 @@ export default function RootLayout({
       <body className={`${inter.className} ${dotGothic.variable}`}>
         <SessionProvider>
           <ThemeProvider>
-            {children}
+            <AISettingsProvider>
+              <GamificationProvider>
+                {children}
+              </GamificationProvider>
+            </AISettingsProvider>
           </ThemeProvider>
         </SessionProvider>
       </body>
     </html>
   );
 }
+

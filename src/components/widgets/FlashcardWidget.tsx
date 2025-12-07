@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { RefreshCw, Send, Lightbulb, Volume2, ChevronRight, BookOpen, Plus, Trash2, X, Filter, Trophy, Target, ThumbsUp, ThumbsDown } from "lucide-react";
+import { useAISettings } from "@/contexts/AISettingsContext";
+import { useGamification, XP_REWARDS } from "@/contexts/GamificationContext";
 
 // Common English phrases and words that native speakers use
 const FLASHCARD_DATA = [
@@ -225,7 +227,7 @@ const CATEGORIES = [
 ];
 
 const STORAGE_KEY = "dashboard-flashcard-v2";
-const DAILY_GOAL = 5; // Daily word goal
+const DEFAULT_DAILY_GOAL = 5;
 
 interface WordProgress {
     word: string;
@@ -255,12 +257,15 @@ interface StorageData {
     dailyStats: DailyStats;
     totalStreak: number;
     selectedCategory: string;
+    dailyGoal?: number;
 }
 
 // Spaced repetition intervals in hours
 const SR_INTERVALS = [0, 1, 4, 24, 72, 168]; // 0h, 1h, 4h, 1d, 3d, 7d
 
 export default function FlashcardWidget() {
+    const { settings: aiSettings } = useAISettings();
+    const { addXP, checkAndUnlockBadges } = useGamification();
     const [currentCard, setCurrentCard] = useState<typeof FLASHCARD_DATA[0] | null>(null);
     const [userSentence, setUserSentence] = useState("");
     const [feedback, setFeedback] = useState("");
@@ -275,6 +280,7 @@ export default function FlashcardWidget() {
     const [dailyStats, setDailyStats] = useState<DailyStats>({ date: "", practiced: 0, streak: 0 });
     const [totalStreak, setTotalStreak] = useState(0);
     const [selectedCategory, setSelectedCategory] = useState("all");
+    const [dailyGoal, setDailyGoal] = useState(DEFAULT_DAILY_GOAL);
     const [newWord, setNewWord] = useState({ word: "", type: "", example: "" });
 
     useEffect(() => {
@@ -290,6 +296,7 @@ export default function FlashcardWidget() {
             setCustomWords(data.customWords || []);
             setTotalStreak(data.totalStreak || 0);
             setSelectedCategory(data.selectedCategory || "all");
+            setDailyGoal(data.dailyGoal || DEFAULT_DAILY_GOAL);
 
             // Check if it's a new day
             const today = new Date().toDateString();
@@ -300,9 +307,10 @@ export default function FlashcardWidget() {
                 const yesterday = new Date();
                 yesterday.setDate(yesterday.getDate() - 1);
                 const wasYesterday = data.dailyStats?.date === yesterday.toDateString();
-                const newStreak = wasYesterday && data.dailyStats.practiced >= DAILY_GOAL
+                const goal = data.dailyGoal || DEFAULT_DAILY_GOAL;
+                const newStreak = wasYesterday && data.dailyStats.practiced >= goal
                     ? (data.totalStreak || 0) + 1
-                    : (data.dailyStats?.practiced >= DAILY_GOAL ? data.totalStreak || 0 : 0);
+                    : (data.dailyStats?.practiced >= goal ? data.totalStreak || 0 : 0);
                 setTotalStreak(newStreak);
                 setDailyStats({ date: today, practiced: 0, streak: newStreak });
             }
@@ -317,6 +325,7 @@ export default function FlashcardWidget() {
             dailyStats,
             totalStreak,
             selectedCategory,
+            dailyGoal,
             ...updates
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
@@ -433,6 +442,22 @@ export default function FlashcardWidget() {
         setDailyStats(newDaily);
 
         saveData({ progress: newProgress, dailyStats: newDaily });
+
+        // Gamification: Add XP and check badges
+        if (correct) {
+            const wasMastered = current.level < 5 && newLevel >= 5;
+            if (wasMastered) {
+                addXP(XP_REWARDS.flashcard_master, "flashcard_master");
+            } else {
+                addXP(XP_REWARDS.flashcard_correct, "flashcard_correct");
+            }
+            // Check for badges
+            const masteredCount = Object.values(newProgress).filter(p => p.level >= 5).length;
+            checkAndUnlockBadges({ masteredWords: masteredCount, streak: totalStreak });
+        } else {
+            addXP(XP_REWARDS.flashcard_incorrect, "flashcard_incorrect");
+        }
+
         pickNextCard(undefined, newProgress);
     };
 
@@ -473,6 +498,9 @@ export default function FlashcardWidget() {
     };
 
     const resetProgress = () => {
+        if (!confirm("本当にリセットしますか？\n\n・連続日数が0に戻ります\n・全単語のレベルがリセットされます\n・この操作は取り消せません")) {
+            return;
+        }
         setProgress({});
         setDailyStats({ date: new Date().toDateString(), practiced: 0, streak: 0 });
         setTotalStreak(0);
@@ -498,7 +526,9 @@ export default function FlashcardWidget() {
 1. 使い方の評価（○正しい/△惜しい/×間違い）
 2. フィードバック（1-2文で励まし）
 3. より自然な例文（もしあれば）`,
-                    history: []
+                    history: [],
+                    provider: aiSettings.provider,
+                    model: aiSettings.groqModel,
                 })
             });
 
@@ -552,8 +582,8 @@ export default function FlashcardWidget() {
     if (!mounted) return null;
 
     // Daily progress bar
-    const dailyProgress = Math.min(100, (dailyStats.practiced / DAILY_GOAL) * 100);
-    const goalReached = dailyStats.practiced >= DAILY_GOAL;
+    const dailyProgress = Math.min(100, (dailyStats.practiced / dailyGoal) * 100);
+    const goalReached = dailyStats.practiced >= dailyGoal;
 
     // Stats mode
     if (mode === "stats") {
@@ -588,7 +618,7 @@ export default function FlashcardWidget() {
                             <div className="flex-1 h-2 bg-[#333] rounded-full overflow-hidden">
                                 <div className="h-full bg-gradient-to-r from-cyan-500 to-green-500 transition-all" style={{ width: `${dailyProgress}%` }} />
                             </div>
-                            <span className="text-[9px] text-gray-300">{dailyStats.practiced}/{DAILY_GOAL}</span>
+                            <span className="text-[9px] text-gray-300">{dailyStats.practiced}/{dailyGoal}</span>
                         </div>
                     </div>
                     <button onClick={resetProgress} className="w-full py-1.5 text-[9px] text-red-400 border border-red-900 rounded hover:bg-red-900/30">
@@ -635,6 +665,25 @@ export default function FlashcardWidget() {
                                 <button onClick={() => deleteCustomWord(i)} className="text-gray-500 hover:text-red-400"><Trash2 size={10} /></button>
                             </div>
                         ))}
+                    </div>
+                    {/* Daily Goal Setting */}
+                    <div className="border-t border-[#333] pt-2 mt-2">
+                        <div className="flex items-center justify-between">
+                            <p className="text-[9px] text-gray-500">デイリー目標</p>
+                            <select
+                                value={dailyGoal}
+                                onChange={(e) => {
+                                    const newGoal = parseInt(e.target.value);
+                                    setDailyGoal(newGoal);
+                                    saveData({ dailyGoal: newGoal });
+                                }}
+                                className="text-[10px] bg-[#1a1a1a] border border-[#3a3a3a] rounded px-2 py-1 text-white"
+                            >
+                                {[1, 3, 5, 10, 15, 20].map(n => (
+                                    <option key={n} value={n}>{n}単語/日</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                     <p className="text-[8px] text-gray-600 mt-3">収録数: {getAllWords().length} | 復習待ち: {getDueCount()}</p>
                 </div>
@@ -722,10 +771,26 @@ export default function FlashcardWidget() {
                     <div className="flex-1 h-1.5 bg-[#333] rounded-full overflow-hidden">
                         <div className={`h-full transition-all ${goalReached ? "bg-green-500" : "bg-cyan-500"}`} style={{ width: `${dailyProgress}%` }} />
                     </div>
-                    <span className={goalReached ? "text-green-400" : "text-gray-500"}>{dailyStats.practiced}/{DAILY_GOAL}</span>
+                    <span className={goalReached ? "text-green-400" : "text-gray-500"}>{dailyStats.practiced}/{dailyGoal}</span>
                     {totalStreak > 0 && <span className="text-orange-400">🔥{totalStreak}</span>}
                 </div>
             </div>
+
+            {/* Review Reminder */}
+            {getDueCount() > 0 && (
+                <div className="mx-2 mt-1 px-2 py-1 bg-gradient-to-r from-yellow-900/40 to-orange-900/40 border border-yellow-700/50 rounded text-[8px] flex items-center justify-between">
+                    <span className="text-yellow-300 flex items-center gap-1">
+                        <RefreshCw size={10} className="animate-pulse" />
+                        復習待ち: {getDueCount()}単語
+                    </span>
+                    <button
+                        onClick={() => pickNextCard()}
+                        className="text-yellow-400 hover:text-yellow-300 underline"
+                    >
+                        今すぐ復習
+                    </button>
+                </div>
+            )}
 
             <div className="flex-1 p-2 overflow-auto min-h-0">
                 <div className="h-full flex flex-col">

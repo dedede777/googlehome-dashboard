@@ -3,9 +3,18 @@
 import { useState, useEffect } from "react";
 import { Trash2 } from "lucide-react";
 
-const STORAGE_KEY = "dashboard-memo";
+interface MemoWidgetProps {
+    memoId?: string;
+    memoName?: string;
+    memoColor?: string;
+}
 
-export default function MemoWidget() {
+export default function MemoWidget({
+    memoId = "1",
+    memoName = "MEMO",
+    memoColor = "cyan"
+}: MemoWidgetProps) {
+    const STORAGE_KEY = `dashboard-memo-${memoId}`;
     const [memo, setMemo] = useState("");
     const [mounted, setMounted] = useState(false);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -20,7 +29,7 @@ export default function MemoWidget() {
                 setLastSaved(new Date(data.savedAt));
             }
         }
-    }, []);
+    }, [STORAGE_KEY]);
 
     const saveMemo = (text: string) => {
         setMemo(text);
@@ -45,11 +54,21 @@ export default function MemoWidget() {
         return date.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
     };
 
+    const colorClasses: Record<string, string> = {
+        cyan: "text-cyan-400",
+        green: "text-green-400",
+        purple: "text-purple-400",
+        orange: "text-orange-400",
+        pink: "text-pink-400",
+    };
+
     if (!mounted) return null;
 
     return (
         <div className="h-full flex flex-col overflow-hidden">
-            <div className="widget-title flex-shrink-0">MEMO</div>
+            <div className={`widget-title flex-shrink-0 ${colorClasses[memoColor] || colorClasses.cyan}`}>
+                {memoName}
+            </div>
 
             <div className="flex-1 p-2 min-h-0">
                 <textarea
@@ -82,4 +101,17 @@ export default function MemoWidget() {
             </div>
         </div>
     );
+}
+
+// Individual memo components with fixed IDs
+export function Memo1Widget() {
+    return <MemoWidget memoId="1" memoName="MEMO 1" memoColor="cyan" />;
+}
+
+export function Memo2Widget() {
+    return <MemoWidget memoId="2" memoName="MEMO 2" memoColor="green" />;
+}
+
+export function Memo3Widget() {
+    return <MemoWidget memoId="3" memoName="MEMO 3" memoColor="purple" />;
 }

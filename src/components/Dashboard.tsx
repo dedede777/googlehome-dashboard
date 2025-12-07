@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { Responsive, WidthProvider, Layout } from "react-grid-layout";
-import { Plus, X, Search, GripVertical, Image as ImageIcon, Lock, Unlock, Eye, EyeOff } from "lucide-react";
+import { Plus, X, Search, GripVertical, Image as ImageIcon, Lock, Unlock, Eye, EyeOff, Zap } from "lucide-react";
 import ThemeSwitcher from "./ThemeSwitcher";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -21,7 +21,7 @@ import EmbedWidget from "./widgets/EmbedWidget";
 import SNSWidget from "./widgets/SNSWidget";
 import PomodoroWidget from "./widgets/PomodoroWidget";
 import BookmarkWidget from "./widgets/BookmarkWidget";
-import MemoWidget from "./widgets/MemoWidget";
+import MemoWidget, { Memo2Widget, Memo3Widget } from "./widgets/MemoWidget";
 import QuoteWidget from "./widgets/QuoteWidget";
 import RSSWidget from "./widgets/RSSWidget";
 import WaterWidget from "./widgets/WaterWidget";
@@ -31,10 +31,17 @@ import ZenWidget from "./widgets/ZenWidget";
 import HabitWidget from "./widgets/HabitWidget";
 import ExchangeWidget from "./widgets/ExchangeWidget";
 import FlashcardWidget from "./widgets/FlashcardWidget";
+import DiaryWidget from "./widgets/DiaryWidget";
+import ConversationWidget from "./widgets/ConversationWidget";
+import ShadowingWidget from "./widgets/ShadowingWidget";
+import LearningStatsWidget from "./widgets/LearningStatsWidget";
+import AchievementsWidget from "./widgets/AchievementsWidget";
 import GoogleAppsLauncher from "./GoogleAppsLauncher";
 import DataManagementModal from "./DataManagementModal";
+import AISettingsModal from "./AISettingsModal";
 import CursorEffects from "./CursorEffects";
 import { Database } from "lucide-react";
+import { useAISettings } from "@/contexts/AISettingsContext";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -53,6 +60,8 @@ const WIDGET_COMPONENTS: Record<string, React.ComponentType<Record<string, unkno
     pomodoro: PomodoroWidget,
     bookmark: BookmarkWidget,
     memo: MemoWidget,
+    memo2: Memo2Widget,
+    memo3: Memo3Widget,
     quote: QuoteWidget,
     rss: RSSWidget,
     water: WaterWidget,
@@ -62,6 +71,11 @@ const WIDGET_COMPONENTS: Record<string, React.ComponentType<Record<string, unkno
     habit: HabitWidget,
     exchange: ExchangeWidget,
     flashcard: FlashcardWidget,
+    diary: DiaryWidget,
+    conversation: ConversationWidget,
+    shadowing: ShadowingWidget,
+    learningstats: LearningStatsWidget,
+    achievements: AchievementsWidget,
 };
 
 const WIDGET_CATALOG = [
@@ -78,9 +92,16 @@ const WIDGET_CATALOG = [
     { id: "exchange", name: "Exchange", icon: "💱", category: "Info" },
     { id: "tasks", name: "Tasks", icon: "✅", category: "Productivity" },
     { id: "pomodoro", name: "Pomodoro", icon: "🍅", category: "Productivity" },
-    { id: "memo", name: "Memo", icon: "📝", category: "Productivity" },
+    { id: "memo", name: "Memo 1", icon: "📝", category: "Productivity" },
+    { id: "memo2", name: "Memo 2", icon: "📗", category: "Productivity" },
+    { id: "memo3", name: "Memo 3", icon: "📘", category: "Productivity" },
     { id: "quote", name: "Quote", icon: "💬", category: "Productivity" },
     { id: "flashcard", name: "English", icon: "🎯", category: "Learning" },
+    { id: "diary", name: "Diary", icon: "📔", category: "Learning" },
+    { id: "conversation", name: "Conversation", icon: "💬", category: "Learning" },
+    { id: "shadowing", name: "Shadowing", icon: "🎧", category: "Learning" },
+    { id: "learningstats", name: "Stats", icon: "📊", category: "Learning" },
+    { id: "achievements", name: "Achievements", icon: "🏆", category: "Learning" },
     { id: "aichat", name: "AI", icon: "🤖", category: "Links" },
     { id: "sns", name: "SNS", icon: "📱", category: "Links" },
     { id: "bookmark", name: "Bookmarks", icon: "🔖", category: "Links" },
@@ -120,6 +141,7 @@ const DEFAULT_LAYOUT: Layout[] = [
 const DEFAULT_COVER = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&h=400&fit=crop";
 
 export default function Dashboard() {
+    const { settings: aiSettings } = useAISettings();
     const [mounted, setMounted] = useState(false);
     const [widgets, setWidgets] = useState<WidgetInstance[]>(DEFAULT_WIDGETS);
     const [layouts, setLayouts] = useState<{ lg: Layout[] }>({ lg: DEFAULT_LAYOUT });
@@ -132,6 +154,7 @@ export default function Dashboard() {
     const [title, setTitle] = useState("Command Center");
     const [subtitle, setSubtitle] = useState("Your personal dashboard");
     const [headerHidden, setHeaderHidden] = useState(false);
+    const [isAISettingsOpen, setIsAISettingsOpen] = useState(false);
 
     useEffect(() => {
         setMounted(true);
@@ -363,6 +386,13 @@ export default function Dashboard() {
                         <span className="hidden sm:inline">DATA</span>
                     </button>
                     <button
+                        onClick={() => setIsAISettingsOpen(true)}
+                        className={`p-3 bg-[#1a1a1a] border transition-colors ${aiSettings.provider === 'groq' ? 'border-cyan-500/30 text-cyan-400' : 'border-purple-500/30 text-purple-400'} hover:border-[#3a3a3a]`}
+                        title="AI Settings"
+                    >
+                        <Zap size={18} />
+                    </button>
+                    <button
                         onClick={() => setIsLocked(!isLocked)}
                         className={`p-3 bg-[#1a1a1a] border transition-colors ${isLocked
                             ? "border-cyan-500/50 text-cyan-400"
@@ -465,6 +495,11 @@ export default function Dashboard() {
             <DataManagementModal
                 isOpen={isDataModalOpen}
                 onClose={() => setIsDataModalOpen(false)}
+            />
+            {/* AI Settings Modal */}
+            <AISettingsModal
+                isOpen={isAISettingsOpen}
+                onClose={() => setIsAISettingsOpen(false)}
             />
             {/* Cursor Effects */}
             <CursorEffects />
