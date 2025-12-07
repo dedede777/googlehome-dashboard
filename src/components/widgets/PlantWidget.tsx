@@ -83,7 +83,18 @@ export default function PlantWidget() {
         setMounted(true);
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
-            setData(JSON.parse(saved));
+            try {
+                const parsed = JSON.parse(saved);
+                // Merge with defaults to handle missing properties from old data
+                setData(prev => ({
+                    ...prev,
+                    ...parsed,
+                    mood: parsed.mood || "neutral",
+                    totalPets: parsed.totalPets || 0,
+                }));
+            } catch {
+                // Ignore parse errors
+            }
         }
     }, []);
 
@@ -182,7 +193,7 @@ export default function PlantWidget() {
     const stage = getStage(data.exp);
     const progress = getProgressInStage(data.exp);
     const stageName = PLANT_STAGES[stage].name;
-    const moodInfo = MOODS[data.mood];
+    const moodInfo = MOODS[data.mood] || MOODS.neutral;
 
     if (!mounted) return null;
 
