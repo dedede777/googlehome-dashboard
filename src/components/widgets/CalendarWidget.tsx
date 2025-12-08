@@ -3,6 +3,7 @@
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { Calendar as CalendarIcon, LogIn, LogOut, Loader2, Trash2, Pencil, Check, X } from "lucide-react";
+import { useAISettings } from "@/contexts/AISettingsContext";
 
 interface CalendarEvent {
     id: string;
@@ -13,6 +14,7 @@ interface CalendarEvent {
 
 export default function CalendarWidget() {
     const { data: session, status } = useSession();
+    const { settings: aiSettings } = useAISettings();
     const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [loading, setLoading] = useState(false);
     const [processing, setProcessing] = useState(false);
@@ -352,7 +354,11 @@ export default function CalendarWidget() {
                                 const res = await fetch("/api/calendar/add", {
                                     method: "POST",
                                     headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ text }),
+                                    body: JSON.stringify({
+                                        text,
+                                        provider: aiSettings.provider,
+                                        model: aiSettings.groqModel,
+                                    }),
                                 });
 
                                 if (res.ok) {
@@ -384,6 +390,6 @@ export default function CalendarWidget() {
                     </form>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
