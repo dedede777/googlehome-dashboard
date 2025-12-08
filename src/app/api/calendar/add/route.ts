@@ -17,14 +17,19 @@ async function parseEventWithGemini(text: string): Promise<any> {
     const prompt = `
       You are a calendar assistant. Parse the following text into a JSON object for a Google Calendar event.
       Text: "${text}"
-      Current Date: ${new Date().toISOString()}
+      Current Date and Time: ${new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}
+      Timezone: Asia/Tokyo
       
       Return ONLY the JSON object with the following fields:
-      - summary: string
-      - start: { dateTime: string (ISO 8601) }
-      - end: { dateTime: string (ISO 8601) }
+      - summary: string (the event title/description)
+      - start: { dateTime: string (ISO 8601 format with timezone, e.g., 2024-12-09T15:00:00+09:00) }
+      - end: { dateTime: string (ISO 8601 format with timezone, e.g., 2024-12-09T16:00:00+09:00) }
       
-      If no duration is specified, assume 1 hour.
+      IMPORTANT: 
+      - Always include the +09:00 timezone offset for Japan.
+      - If no duration is specified, assume 1 hour.
+      - "明日" means tomorrow, "今日" means today.
+      - Use 24-hour format.
       If the text is not a valid event, return { error: "Invalid event" }.
     `;
 
@@ -45,14 +50,19 @@ async function parseEventWithGroq(text: string, model: string = "llama-3.1-8b-in
 
     const prompt = `You are a calendar assistant. Parse the following text into a JSON object for a Google Calendar event.
 Text: "${text}"
-Current Date: ${new Date().toISOString()}
+Current Date and Time: ${new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}
+Timezone: Asia/Tokyo
 
 Return ONLY the JSON object with the following fields:
-- summary: string
-- start: { dateTime: string (ISO 8601) }
-- end: { dateTime: string (ISO 8601) }
+- summary: string (the event title/description)
+- start: { dateTime: string (ISO 8601 format with timezone, e.g., 2024-12-09T15:00:00+09:00) }
+- end: { dateTime: string (ISO 8601 format with timezone, e.g., 2024-12-09T16:00:00+09:00) }
 
-If no duration is specified, assume 1 hour.
+IMPORTANT:
+- Always include the +09:00 timezone offset for Japan.
+- If no duration is specified, assume 1 hour.
+- "明日" means tomorrow, "今日" means today.
+- Use 24-hour format.
 If the text is not a valid event, return { error: "Invalid event" }.`;
 
     const response = await fetch(GROQ_API_URL, {
@@ -132,8 +142,14 @@ export async function POST(req: Request) {
             calendarId: "primary",
             requestBody: {
                 summary: eventData.summary,
-                start: eventData.start,
-                end: eventData.end,
+                start: {
+                    dateTime: eventData.start.dateTime,
+                    timeZone: "Asia/Tokyo",
+                },
+                end: {
+                    dateTime: eventData.end.dateTime,
+                    timeZone: "Asia/Tokyo",
+                },
             },
         });
 
