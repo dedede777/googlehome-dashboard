@@ -97,24 +97,24 @@ export async function POST(req: Request) {
             // Try Gemini first
             try {
                 eventData = await parseEventWithGemini(text);
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Gemini failed, falling back to Groq:", error);
                 try {
                     eventData = await parseEventWithGroq(text, model);
-                } catch (fallbackError) {
-                    throw new Error(`Gemini failed. Groq fallback also failed.`);
+                } catch (fallbackError: any) {
+                    throw new Error(`Gemini: ${error.message || error}. Groq: ${fallbackError.message || fallbackError}`);
                 }
             }
         } else {
             // Use Groq (default)
             try {
                 eventData = await parseEventWithGroq(text, model);
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Groq failed, trying Gemini:", error);
                 try {
                     eventData = await parseEventWithGemini(text);
-                } catch (fallbackError) {
-                    throw new Error(`Groq failed. Gemini fallback also failed.`);
+                } catch (fallbackError: any) {
+                    throw new Error(`Groq: ${error.message || error}. Gemini: ${fallbackError.message || fallbackError}`);
                 }
             }
         }
