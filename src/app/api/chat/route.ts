@@ -17,7 +17,7 @@ async function callGemini(message: string, history: ChatMessage[]) {
         throw new Error("GEMINI_API_KEY not configured");
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     // Convert history to Gemini format
     const chatHistory = history?.map((msg) => ({
@@ -34,7 +34,7 @@ async function callGemini(message: string, history: ChatMessage[]) {
     return response.text();
 }
 
-async function callGroq(message: string, history: ChatMessage[], model: string = "llama-3.1-70b-versatile") {
+async function callGroq(message: string, history: ChatMessage[], model: string = "llama-3.1-8b-instant") {
     const groqApiKey = process.env.GROQ_API_KEY;
 
     if (!groqApiKey) {

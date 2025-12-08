@@ -17,15 +17,15 @@ interface AISettingsContextType {
 const STORAGE_KEY = "dashboard-ai-settings";
 
 const DEFAULT_SETTINGS: AISettings = {
-    provider: "groq", // Default to Groq as Gemini is having issues
-    groqModel: "llama-3.1-70b-versatile",
+    provider: "groq", // Default to Groq
+    groqModel: "llama-3.1-8b-instant",
 };
 
-const GROQ_MODELS = [
-    { id: "llama-3.1-70b-versatile", name: "Llama 3.1 70B (推奨)" },
-    { id: "llama-3.1-8b-instant", name: "Llama 3.1 8B (高速)" },
+export const GROQ_MODELS = [
+    { id: "llama-3.1-8b-instant", name: "Llama 3.1 8B (推奨・高速)" },
     { id: "llama-3.3-70b-versatile", name: "Llama 3.3 70B (最新)" },
     { id: "mixtral-8x7b-32768", name: "Mixtral 8x7B" },
+    { id: "gemma2-9b-it", name: "Gemma 2 9B" },
 ];
 
 const AISettingsContext = createContext<AISettingsContextType | null>(null);
@@ -75,5 +75,3 @@ export function useAISettings() {
     }
     return context;
 }
-
-export { GROQ_MODELS };

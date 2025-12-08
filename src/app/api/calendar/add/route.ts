@@ -12,7 +12,7 @@ async function parseEventWithGemini(text: string): Promise<any> {
         throw new Error("GEMINI_API_KEY not configured");
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const prompt = `
       You are a calendar assistant. Parse the following text into a JSON object for a Google Calendar event.
@@ -36,7 +36,7 @@ async function parseEventWithGemini(text: string): Promise<any> {
     return JSON.parse(jsonStr);
 }
 
-async function parseEventWithGroq(text: string, model: string = "llama-3.1-70b-versatile"): Promise<any> {
+async function parseEventWithGroq(text: string, model: string = "llama-3.1-8b-instant"): Promise<any> {
     const groqApiKey = process.env.GROQ_API_KEY;
 
     if (!groqApiKey) {
