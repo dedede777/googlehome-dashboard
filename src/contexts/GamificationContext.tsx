@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode } from "react";
 
 // XP per action
 export const XP_REWARDS = {
@@ -120,27 +120,52 @@ const DEFAULT_DATA: GamificationData = {
 
 const GamificationContext = createContext<GamificationContextType | null>(null);
 
-export function GamificationProvider({ children }: { children: ReactNode }) {
-    const [data, setData] = useState<GamificationData>(DEFAULT_DATA);
-    const [recentBadge, setRecentBadge] = useState<Badge | null>(null);
-    const [mounted, setMounted] = useState(false);
+function loadInitialData(): GamificationData {
+    if (typeof window === "undefined") return DEFAULT_DATA;
 
-    useEffect(() => {
-        setMounted(true);
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                setData({ ...DEFAULT_DATA, ...parsed });
-            } catch {
-                // Use default data
-            }
-        }
-    }, []);
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return DEFAULT_DATA;
+
+    try {
+        return { ...DEFAULT_DATA, ...JSON.parse(saved) };
+    } catch {
+        return DEFAULT_DATA;
+    }
+}
+
+export function GamificationProvider({ children }: { children: ReactNode }) {
+    const [data, setData] = useState<GamificationData>(loadInitialData);
+    const [recentBadge, setRecentBadge] = useState<Badge | null>(null);
+
+    const applyBadgeUnlocks = (currentData: GamificationData, badgeIds: string[]) => {
+        const nextUnlockedBadges = [...currentData.unlockedBadges];
+        let newestBadge: Badge | null = null;
+        const unlockedAt = Date.now();
+
+        badgeIds.forEach((badgeId) => {
+            if (nextUnlockedBadges.includes(badgeId)) return;
+
+            const badge = BADGES.find(b => b.id === badgeId);
+            if (!badge) return;
+
+            nextUnlockedBadges.push(badgeId);
+            newestBadge = { ...badge, unlockedAt };
+        });
+
+        return {
+            nextData: {
+                ...currentData,
+                unlockedBadges: nextUnlockedBadges,
+            },
+            newestBadge,
+        };
+    };
 
     const saveData = (newData: GamificationData) => {
         setData(newData);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
+        if (typeof window !== "undefined") {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
+        }
     };
 
     const calculateLevel = (xp: number): number => {
@@ -152,7 +177,7 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
         return 1;
     };
 
-    const addXP = (amount: number, action?: string) => {
+    const addXP = (amount: number) => {
         const today = new Date().toDateString();
         const isNewDay = data.lastActivityDate !== today;
 
@@ -178,130 +203,82 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
             weeklyXP: newWeeklyXP,
         };
 
-        saveData(newData);
+        const badgeIdsToUnlock: string[] = [];
 
         // Check for level badges
-        if (newLevel >= 5 && !data.unlockedBadges.includes("level_5")) {
-            unlockBadge("level_5");
-        }
-        if (newLevel >= 10 && !data.unlockedBadges.includes("level_10")) {
-            unlockBadge("level_10");
-        }
-        if (newLevel >= 15 && !data.unlockedBadges.includes("level_15")) {
-            unlockBadge("level_15");
-        }
-        if (newLevel >= 20 && !data.unlockedBadges.includes("level_20")) {
-            unlockBadge("level_20");
-        }
+        if (newLevel >= 5) badgeIdsToUnlock.push("level_5");
+        if (newLevel >= 10) badgeIdsToUnlock.push("level_10");
+        if (newLevel >= 15) badgeIdsToUnlock.push("level_15");
+        if (newLevel >= 20) badgeIdsToUnlock.push("level_20");
 
         // Check time-based badges
         const hour = new Date().getHours();
-        if (hour < 6 && !data.unlockedBadges.includes("early_bird")) {
-            unlockBadge("early_bird");
-        }
-        if (hour >= 0 && hour < 4 && !data.unlockedBadges.includes("night_owl")) {
-            unlockBadge("night_owl");
-        }
+        if (hour < 6) badgeIdsToUnlock.push("early_bird");
+        if (hour >= 0 && hour < 4) badgeIdsToUnlock.push("night_owl");
+
+        const { nextData, newestBadge } = applyBadgeUnlocks(newData, badgeIdsToUnlock);
+        saveData(nextData);
+        if (newestBadge) setRecentBadge(newestBadge);
     };
 
     const unlockBadge = (badgeId: string) => {
-        if (data.unlockedBadges.includes(badgeId)) return;
+        const { nextData, newestBadge } = applyBadgeUnlocks(data, [badgeId]);
+        if (nextData.unlockedBadges.length === data.unlockedBadges.length) return;
 
-        const badge = BADGES.find(b => b.id === badgeId);
-        if (!badge) return;
-
-        const newUnlockedBadges = [...data.unlockedBadges, badgeId];
-        const newData = {
-            ...data,
-            unlockedBadges: newUnlockedBadges,
-        };
-
-        saveData(newData);
-        setRecentBadge({ ...badge, unlockedAt: Date.now() });
+        saveData(nextData);
+        if (newestBadge) setRecentBadge(newestBadge);
     };
 
     const checkAndUnlockBadges = (stats: GameStats) => {
+        const badgeIdsToUnlock: string[] = [];
+
         // Flashcard badges
         if (stats.masteredWords !== undefined) {
-            if (stats.masteredWords >= 1 && !data.unlockedBadges.includes("first_word")) {
-                unlockBadge("first_word");
-            }
-            if (stats.masteredWords >= 10 && !data.unlockedBadges.includes("word_10")) {
-                unlockBadge("word_10");
-            }
-            if (stats.masteredWords >= 25 && !data.unlockedBadges.includes("word_25")) {
-                unlockBadge("word_25");
-            }
-            if (stats.masteredWords >= 50 && !data.unlockedBadges.includes("word_50")) {
-                unlockBadge("word_50");
-            }
-            if (stats.masteredWords >= 100 && !data.unlockedBadges.includes("word_100")) {
-                unlockBadge("word_100");
-            }
-            if (stats.masteredWords >= 200 && !data.unlockedBadges.includes("word_200")) {
-                unlockBadge("word_200");
-            }
+            if (stats.masteredWords >= 1) badgeIdsToUnlock.push("first_word");
+            if (stats.masteredWords >= 10) badgeIdsToUnlock.push("word_10");
+            if (stats.masteredWords >= 25) badgeIdsToUnlock.push("word_25");
+            if (stats.masteredWords >= 50) badgeIdsToUnlock.push("word_50");
+            if (stats.masteredWords >= 100) badgeIdsToUnlock.push("word_100");
+            if (stats.masteredWords >= 200) badgeIdsToUnlock.push("word_200");
         }
 
         // Diary badges
         if (stats.diaryCount !== undefined) {
-            if (stats.diaryCount >= 1 && !data.unlockedBadges.includes("first_diary")) {
-                unlockBadge("first_diary");
-            }
+            if (stats.diaryCount >= 1) badgeIdsToUnlock.push("first_diary");
         }
         if (stats.diaryStreak !== undefined) {
-            if (stats.diaryStreak >= 7 && !data.unlockedBadges.includes("diary_7")) {
-                unlockBadge("diary_7");
-            }
-            if (stats.diaryStreak >= 30 && !data.unlockedBadges.includes("diary_30")) {
-                unlockBadge("diary_30");
-            }
+            if (stats.diaryStreak >= 7) badgeIdsToUnlock.push("diary_7");
+            if (stats.diaryStreak >= 30) badgeIdsToUnlock.push("diary_30");
         }
 
         // Conversation badges
         if (stats.conversationCount !== undefined) {
-            if (stats.conversationCount >= 1 && !data.unlockedBadges.includes("first_chat")) {
-                unlockBadge("first_chat");
-            }
-            if (stats.conversationCount >= 10 && !data.unlockedBadges.includes("chat_10")) {
-                unlockBadge("chat_10");
-            }
-            if (stats.conversationCount >= 50 && !data.unlockedBadges.includes("chat_50")) {
-                unlockBadge("chat_50");
-            }
+            if (stats.conversationCount >= 1) badgeIdsToUnlock.push("first_chat");
+            if (stats.conversationCount >= 10) badgeIdsToUnlock.push("chat_10");
+            if (stats.conversationCount >= 50) badgeIdsToUnlock.push("chat_50");
         }
 
         // Shadowing badges
         if (stats.shadowingMastered !== undefined) {
-            if (stats.shadowingMastered >= 1 && !data.unlockedBadges.includes("first_shadow")) {
-                unlockBadge("first_shadow");
-            }
-            if (stats.shadowingMastered >= 10 && !data.unlockedBadges.includes("shadow_10")) {
-                unlockBadge("shadow_10");
-            }
-            if (stats.shadowingMastered >= 30 && !data.unlockedBadges.includes("shadow_30")) {
-                unlockBadge("shadow_30");
-            }
+            if (stats.shadowingMastered >= 1) badgeIdsToUnlock.push("first_shadow");
+            if (stats.shadowingMastered >= 10) badgeIdsToUnlock.push("shadow_10");
+            if (stats.shadowingMastered >= 30) badgeIdsToUnlock.push("shadow_30");
         }
 
         // Streak badges
         if (stats.streak !== undefined) {
-            if (stats.streak >= 3 && !data.unlockedBadges.includes("streak_3")) {
-                unlockBadge("streak_3");
-            }
-            if (stats.streak >= 7 && !data.unlockedBadges.includes("streak_7")) {
-                unlockBadge("streak_7");
-            }
-            if (stats.streak >= 14 && !data.unlockedBadges.includes("streak_14")) {
-                unlockBadge("streak_14");
-            }
-            if (stats.streak >= 30 && !data.unlockedBadges.includes("streak_30")) {
-                unlockBadge("streak_30");
-            }
-            if (stats.streak >= 100 && !data.unlockedBadges.includes("streak_100")) {
-                unlockBadge("streak_100");
-            }
+            if (stats.streak >= 3) badgeIdsToUnlock.push("streak_3");
+            if (stats.streak >= 7) badgeIdsToUnlock.push("streak_7");
+            if (stats.streak >= 14) badgeIdsToUnlock.push("streak_14");
+            if (stats.streak >= 30) badgeIdsToUnlock.push("streak_30");
+            if (stats.streak >= 100) badgeIdsToUnlock.push("streak_100");
         }
+
+        const { nextData, newestBadge } = applyBadgeUnlocks(data, badgeIdsToUnlock);
+        if (nextData.unlockedBadges.length === data.unlockedBadges.length) return;
+
+        saveData(nextData);
+        if (newestBadge) setRecentBadge(newestBadge);
     };
 
     const clearRecentBadge = () => {
@@ -314,13 +291,8 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
     const xpToNextLevel = nextLevelXP - data.totalXP;
     const xpProgress = ((data.totalXP - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100;
 
-    const unlockedBadges = BADGES.filter(b => data.unlockedBadges.includes(b.id))
-        .map(b => ({ ...b, unlockedAt: Date.now() }));
+    const unlockedBadges = BADGES.filter(b => data.unlockedBadges.includes(b.id));
     const lockedBadges = BADGES.filter(b => !data.unlockedBadges.includes(b.id));
-
-    if (!mounted) {
-        return <>{children}</>;
-    }
 
     return (
         <GamificationContext.Provider value={{

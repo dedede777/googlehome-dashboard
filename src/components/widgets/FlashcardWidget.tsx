@@ -418,18 +418,21 @@ export default function FlashcardWidget() {
         let newLevel = current.level;
         if (correct) {
             newLevel = Math.min(5, current.level + 1);
-            current.correct++;
         } else {
             newLevel = Math.max(0, current.level - 1);
-            current.incorrect++;
         }
 
         const hoursUntilReview = SR_INTERVALS[newLevel] || SR_INTERVALS[SR_INTERVALS.length - 1];
-        current.level = newLevel;
-        current.lastSeen = now;
-        current.nextReview = now + hoursUntilReview * 60 * 60 * 1000;
+        const updatedProgress = {
+            ...current,
+            level: newLevel,
+            lastSeen: now,
+            nextReview: now + hoursUntilReview * 60 * 60 * 1000,
+            correct: current.correct + (correct ? 1 : 0),
+            incorrect: current.incorrect + (correct ? 0 : 1),
+        };
 
-        const newProgress = { ...progress, [currentCard.word]: current };
+        const newProgress = { ...progress, [currentCard.word]: updatedProgress };
         setProgress(newProgress);
 
         // Update daily stats
@@ -804,7 +807,7 @@ export default function FlashcardWidget() {
                         <p className="text-lg font-bold text-white mb-2 text-center">{currentCard.word}</p>
                         <button onClick={speakWord} className="p-1 text-gray-400 hover:text-white mb-2"><Volume2 size={16} /></button>
                         {showExample ? (
-                            <p className="text-[10px] text-gray-400 text-center italic">"{currentCard.example}"</p>
+                            <p className="text-[10px] text-gray-400 text-center italic">&quot;{currentCard.example}&quot;</p>
                         ) : (
                             <button onClick={() => setShowExample(true)} className="text-[9px] text-cyan-500 hover:text-cyan-400 flex items-center gap-1">
                                 <Lightbulb size={10} />例文を見る

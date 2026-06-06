@@ -2,7 +2,7 @@
 
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { Calendar as CalendarIcon, LogIn, LogOut, Loader2, Trash2, Pencil, Check, X } from "lucide-react";
+import { Calendar as CalendarIcon, LogIn, LogOut, Loader2, Trash2, Pencil, Check } from "lucide-react";
 import { useAISettings } from "@/contexts/AISettingsContext";
 
 interface CalendarEvent {
@@ -10,6 +10,13 @@ interface CalendarEvent {
     summary: string;
     start: { dateTime?: string; date?: string };
     end: { dateTime?: string; date?: string };
+}
+
+interface CalendarUpdatePayload {
+    eventId: string;
+    summary: string;
+    start?: { dateTime: string } | { date: string };
+    end?: { dateTime: string } | { date: string };
 }
 
 export default function CalendarWidget() {
@@ -84,7 +91,7 @@ export default function CalendarWidget() {
                 const err = await res.json();
                 alert(err.error || "Failed to delete");
             }
-        } catch (e) {
+        } catch {
             alert("Failed to delete");
         } finally {
             setProcessing(false);
@@ -113,7 +120,7 @@ export default function CalendarWidget() {
         if (!editingId) return;
         setProcessing(true);
         try {
-            const payload: any = {
+            const payload: CalendarUpdatePayload = {
                 eventId: editingId,
                 summary: editForm.summary,
             };
@@ -141,10 +148,9 @@ export default function CalendarWidget() {
                 await fetchEvents();
             } else {
                 const err = await res.json();
-                const debugInfo = err.debug ? `\n\nDebug: ${JSON.stringify(err.debug, null, 2)}` : "";
-                alert((err.error || "Failed to update") + debugInfo);
+                alert(err.error || "Failed to update");
             }
-        } catch (e) {
+        } catch {
             alert("Failed to update");
         } finally {
             setProcessing(false);

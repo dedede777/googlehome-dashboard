@@ -7,7 +7,62 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
-async function parseEventWithGemini(text: string): Promise<any> {
+interface CalendarDateTime {
+    dateTime: string;
+}
+
+interface ParsedCalendarEvent {
+    summary: string;
+    start: CalendarDateTime;
+    end: CalendarDateTime;
+}
+
+interface InvalidCalendarEvent {
+    error: string;
+}
+
+type CalendarParseResult = ParsedCalendarEvent | InvalidCalendarEvent;
+
+interface GroqCompletion {
+    choices?: Array<{
+        message?: {
+            content?: string;
+        };
+    }>;
+}
+
+function errorMessage(error: unknown) {
+    return error instanceof Error ? error.message : String(error);
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null;
+}
+
+function isParsedCalendarEvent(value: unknown): value is ParsedCalendarEvent {
+    if (!isObject(value)) return false;
+    if (typeof value.summary !== "string") return false;
+    if (!isObject(value.start) || typeof value.start.dateTime !== "string") return false;
+    if (!isObject(value.end) || typeof value.end.dateTime !== "string") return false;
+    return true;
+}
+
+function normalizeParseResult(value: unknown): CalendarParseResult {
+    if (isObject(value) && typeof value.error === "string") {
+        return { error: value.error };
+    }
+    if (isParsedCalendarEvent(value)) {
+        return value;
+    }
+    return { error: "Could not parse a valid calendar event" };
+}
+
+function parseJsonResponse(textResponse: string): CalendarParseResult {
+    const jsonStr = textResponse.replace(/```json/g, "").replace(/```/g, "").trim();
+    return normalizeParseResult(JSON.parse(jsonStr) as unknown);
+}
+
+async function parseEventWithGemini(text: string): Promise<CalendarParseResult> {
     if (!process.env.GEMINI_API_KEY) {
         throw new Error("GEMINI_API_KEY not configured");
     }
@@ -37,11 +92,10 @@ async function parseEventWithGemini(text: string): Promise<any> {
     const response = await result.response;
     const textResponse = response.text();
 
-    const jsonStr = textResponse.replace(/```json/g, "").replace(/```/g, "").trim();
-    return JSON.parse(jsonStr);
+    return parseJsonResponse(textResponse);
 }
 
-async function parseEventWithGroq(text: string, model: string = "llama-3.1-8b-instant"): Promise<any> {
+async function parseEventWithGroq(text: string, model: string = "llama-3.1-8b-instant"): Promise<CalendarParseResult> {
     const groqApiKey = process.env.GROQ_API_KEY;
 
     if (!groqApiKey) {
@@ -84,11 +138,10 @@ If the text is not a valid event, return { error: "Invalid event" }.`;
         throw new Error(`Groq API error: ${response.status} - ${errorText}`);
     }
 
-    const data = await response.json();
-    const textResponse = data.choices[0]?.message?.content || "";
+    const data = await response.json() as GroqCompletion;
+    const textResponse = data.choices?.[0]?.message?.content || "";
 
-    const jsonStr = textResponse.replace(/```json/g, "").replace(/```/g, "").trim();
-    return JSON.parse(jsonStr);
+    return parseJsonResponse(textResponse);
 }
 
 export async function POST(req: Request) {
@@ -99,37 +152,44 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { text, provider = "groq", model } = await req.json();
+        const body = await req.json() as Record<string, unknown>;
+        const text = typeof body.text === "string" ? body.text.trim() : "";
+        const provider = body.provider === "gemini" ? "gemini" : "groq";
+        const model = typeof body.model === "string" ? body.model : undefined;
 
-        let eventData: any;
+        if (!text) {
+            return NextResponse.json({ error: "Text is required" }, { status: 400 });
+        }
+
+        let eventData: CalendarParseResult;
 
         if (provider === "gemini") {
             // Try Gemini first
             try {
                 eventData = await parseEventWithGemini(text);
-            } catch (error: any) {
+            } catch (error: unknown) {
                 console.error("Gemini failed, falling back to Groq:", error);
                 try {
                     eventData = await parseEventWithGroq(text, model);
-                } catch (fallbackError: any) {
-                    throw new Error(`Gemini: ${error.message || error}. Groq: ${fallbackError.message || fallbackError}`);
+                } catch (fallbackError: unknown) {
+                    throw new Error(`Gemini: ${errorMessage(error)}. Groq: ${errorMessage(fallbackError)}`);
                 }
             }
         } else {
             // Use Groq (default)
             try {
                 eventData = await parseEventWithGroq(text, model);
-            } catch (error: any) {
+            } catch (error: unknown) {
                 console.error("Groq failed, trying Gemini:", error);
                 try {
                     eventData = await parseEventWithGemini(text);
-                } catch (fallbackError: any) {
-                    throw new Error(`Groq: ${error.message || error}. Gemini: ${fallbackError.message || fallbackError}`);
+                } catch (fallbackError: unknown) {
+                    throw new Error(`Groq: ${errorMessage(error)}. Gemini: ${errorMessage(fallbackError)}`);
                 }
             }
         }
 
-        if (eventData.error) {
+        if ("error" in eventData) {
             return NextResponse.json({ error: eventData.error }, { status: 400 });
         }
 
@@ -154,8 +214,8 @@ export async function POST(req: Request) {
         });
 
         return NextResponse.json(insertRes.data);
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Calendar Add Error:", error);
-        return NextResponse.json({ error: `Failed to add event: ${error.message || error}` }, { status: 500 });
+        return NextResponse.json({ error: `Failed to add event: ${errorMessage(error)}` }, { status: 500 });
     }
 }

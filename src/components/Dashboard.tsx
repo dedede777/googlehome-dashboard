@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Responsive, WidthProvider, Layout } from "react-grid-layout";
-import { Plus, X, Search, GripVertical, Image as ImageIcon, Lock, Unlock, Eye, EyeOff, Zap } from "lucide-react";
+import { Plus, X, Search, Lock, Unlock, Eye, EyeOff, Zap } from "lucide-react";
 import ThemeSwitcher from "./ThemeSwitcher";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -140,12 +140,32 @@ const DEFAULT_LAYOUT: Layout[] = [
 
 const DEFAULT_COVER = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&h=400&fit=crop";
 
+const copyLayout = (layout: Layout[]) => layout.map(item => ({ ...item }));
+
+const itemsOverlap = (a: Layout, b: Layout) => {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+};
+
+const repairOverlappingLayout = (layout: Layout[]) => {
+    const repaired = copyLayout(layout).sort((a, b) => a.y - b.y || a.x - b.x);
+
+    repaired.forEach((item, index) => {
+        let overlapping = repaired.slice(0, index).find(other => itemsOverlap(item, other));
+        while (overlapping) {
+            item.y = overlapping.y + overlapping.h;
+            overlapping = repaired.slice(0, index).find(other => itemsOverlap(item, other));
+        }
+    });
+
+    return repaired;
+};
+
 export default function Dashboard() {
     const { settings: aiSettings } = useAISettings();
     const [mounted, setMounted] = useState(false);
     const [widgets, setWidgets] = useState<WidgetInstance[]>(DEFAULT_WIDGETS);
     const [layouts, setLayouts] = useState<{ lg: Layout[] }>({ lg: DEFAULT_LAYOUT });
-    const [dragStartLayout, setDragStartLayout] = useState<Layout[] | null>(null);
+    const widgetIdCounterRef = useRef(0);
     const [showPanel, setShowPanel] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [isDataModalOpen, setIsDataModalOpen] = useState(false);
@@ -164,7 +184,14 @@ export default function Dashboard() {
         const savedTitle = localStorage.getItem(TITLE_KEY);
 
         if (savedWidgets) setWidgets(JSON.parse(savedWidgets));
-        if (savedLayout) setLayouts({ lg: JSON.parse(savedLayout) });
+        if (savedLayout) {
+            const parsedLayout = JSON.parse(savedLayout) as Layout[];
+            const repairedLayout = repairOverlappingLayout(parsedLayout);
+            setLayouts({ lg: repairedLayout });
+            if (JSON.stringify(repairedLayout) !== JSON.stringify(parsedLayout)) {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(repairedLayout));
+            }
+        }
         if (savedCover) setCoverImage(savedCover);
         if (savedTitle) {
             const parsed = JSON.parse(savedTitle);
@@ -182,8 +209,9 @@ export default function Dashboard() {
 
     const handleLayoutChange = useCallback((currentLayout: Layout[]) => {
         if (mounted) {
-            setLayouts({ lg: currentLayout });
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(currentLayout));
+            const repairedLayout = repairOverlappingLayout(currentLayout);
+            setLayouts({ lg: repairedLayout });
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(repairedLayout));
         }
     }, [mounted]);
 
@@ -198,8 +226,18 @@ export default function Dashboard() {
         localStorage.setItem(TITLE_KEY, JSON.stringify({ title: t, subtitle: s }));
     };
 
+    const createWidgetId = (type: string) => {
+        let id = `${type}-${widgetIdCounterRef.current}`;
+        while (widgets.some(widget => widget.id === id)) {
+            widgetIdCounterRef.current += 1;
+            id = `${type}-${widgetIdCounterRef.current}`;
+        }
+        widgetIdCounterRef.current += 1;
+        return id;
+    };
+
     const addWidget = (type: string) => {
-        const id = `${type}-${Date.now()}`;
+        const id = createWidgetId(type);
         const newWidget: WidgetInstance = { id, type, data: {} };
 
         // Larger default size for media widgets and RSS
@@ -226,7 +264,7 @@ export default function Dashboard() {
         };
 
         const updatedWidgets = [...widgets, newWidget];
-        const updatedLayout = [...layouts.lg, newLayoutItem];
+        const updatedLayout = repairOverlappingLayout([...layouts.lg, newLayoutItem]);
 
         saveWidgets(updatedWidgets);
         setLayouts({ lg: updatedLayout });
@@ -246,83 +284,6 @@ export default function Dashboard() {
     const updateWidgetData = (id: string, data: Record<string, string>) => {
         const updated = widgets.map(w => w.id === id ? { ...w, data: { ...w.data, ...data } } : w);
         saveWidgets(updated);
-    };
-
-    // Save layout when drag starts
-    const handleDragStart = () => {
-        setDragStartLayout([...layouts.lg]);
-    };
-
-    // Keep other widgets in place during drag
-    const handleDrag = (layout: Layout[], _oldItem: Layout, newItem: Layout) => {
-        if (!dragStartLayout) return;
-
-        // Keep all widgets except the one being dragged at their original positions
-        const correctedLayout = layout.map(item => {
-            if (item.i === newItem.i) {
-                return item; // Allow the dragged item to move freely
-            }
-            // Find original position
-            const original = dragStartLayout.find(o => o.i === item.i);
-            if (original) {
-                return { ...item, x: original.x, y: original.y, w: original.w, h: original.h };
-            }
-            return item;
-        });
-
-        if (JSON.stringify(correctedLayout) !== JSON.stringify(layout)) {
-            setLayouts({ lg: correctedLayout });
-        }
-    };
-
-    // Swap two widgets when they overlap
-    const handleDragStop = (_layout: Layout[], _oldItem: Layout, newItem: Layout) => {
-        if (!dragStartLayout) return;
-
-        // Find the original position of the dragged item
-        const originalItem = dragStartLayout.find(item => item.i === newItem.i);
-        if (!originalItem) return;
-
-        // Find if we're overlapping with another widget based on saved positions
-        const overlapping = dragStartLayout.find(item => {
-            if (item.i === newItem.i) return false;
-
-            // Check if newItem position overlaps with this item's saved position
-            const xOverlap = newItem.x < item.x + item.w && newItem.x + newItem.w > item.x;
-            const yOverlap = newItem.y < item.y + item.h && newItem.y + newItem.h > item.y;
-
-            return xOverlap && yOverlap;
-        });
-
-        let newLayout: Layout[];
-
-        if (overlapping && originalItem.w === overlapping.w && originalItem.h === overlapping.h) {
-            // Same size - swap positions directly
-            newLayout = dragStartLayout.map(item => {
-                if (item.i === newItem.i) {
-                    return { ...item, x: overlapping.x, y: overlapping.y };
-                }
-                if (item.i === overlapping.i) {
-                    return { ...item, x: originalItem.x, y: originalItem.y };
-                }
-                return item;
-            });
-        } else if (overlapping) {
-            // Different sizes - don't swap, return to original position
-            newLayout = dragStartLayout;
-        } else {
-            // No overlap - keep widget at new position
-            newLayout = dragStartLayout.map(item => {
-                if (item.i === newItem.i) {
-                    return { ...item, x: newItem.x, y: newItem.y };
-                }
-                return item;
-            });
-        }
-
-        setLayouts({ lg: newLayout });
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newLayout));
-        setDragStartLayout(null);
     };
 
     const handleSearch = (e: React.FormEvent) => {
@@ -457,14 +418,13 @@ export default function Dashboard() {
                 cols={{ lg: 8, md: 6, sm: 4 }}
                 rowHeight={60}
                 onLayoutChange={handleLayoutChange}
-                onDragStart={handleDragStart}
-                onDrag={handleDrag}
-                onDragStop={handleDragStop}
-                draggableHandle=".widget-title"
+                draggableHandle=".widget-card"
+                draggableCancel="button,input,textarea,select,a,.react-resizable-handle"
                 isDraggable={!isLocked}
                 isResizable={!isLocked}
                 compactType={null}
-                preventCollision={false}
+                preventCollision={true}
+                allowOverlap={false}
                 margin={[16, 16]}
             >
                 {widgets.map((widget) => {
