@@ -19,6 +19,8 @@ The app started as a Google Home-style dashboard and has grown into a modular wo
 - Live app: https://googlehome-dashboard.vercel.app/
 - Repository: https://github.com/dedede777/googlehome-dashboard
 
+![Dashboard overview](public/screenshots/dashboard-overview.png)
+
 ## Tech Stack
 
 - Next.js 16 App Router
@@ -97,6 +99,8 @@ src/lib/                 Auth and shared helpers
 - Add clearer empty states for API-backed widgets
 - Add tests around calendar parsing and widget persistence
 - Make theme presets easier to share
+
+See [ROADMAP.md](ROADMAP.md) for the current maintainer backlog.
 
 ## Contributing
 
